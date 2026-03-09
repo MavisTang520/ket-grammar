@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>KET 语法通关</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<!-- Firebase SDKs -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyALb53N5t5krNR8r2_-NyRiPJyZvgSUWhs",
+  authDomain: "ket--grammar.firebaseapp.com",
+  databaseURL: "https://ket--grammar-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ket--grammar",
+  storageBucket: "ket--grammar.firebasestorage.app",
+  messagingSenderId: "942954785539",
+  appId: "1:942954785539:web:38407a5d0d8816caded736"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Expose DB helpers to window so Babel script can use them
+  window._fbDb = db;
+  window._fbRef = ref;
+  window._fbSet = set;
+  window._fbGet = get;
+  window._fbOnValue = onValue;
+  window._fbUpdate = update;
+  window._fbReady = true;
+
+  // Signal React app that Firebase is ready
+  window.dispatchEvent(new Event("firebase-ready"));
+</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: #f8f9fa; font-family: "PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif; }
+input, button { font-family: inherit; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ═══════════════════════════════════════════════════════
+// KET 语法通关 — Firebase 多用户云同步版
+// 数据库: Firebase Realtime Database
+// 所有用户数据实时云端同步，管理员可查看所有学生
+// ═══════════════════════════════════════════════════════
+
+const GRAMMAR_TOPICS = [
+
+  // ── DAY 1 ────────────────────────────────────────────────
+  {
+    id: 1, day: 1, title: "考点1 名词 (Nouns)", emoji: "📚", color: "#FF6B6B", category: "DAY 1",
+    rules: [
+      { rule: "规则复数：直接加 -s", examples: ["book→books", "apple→apples", "card→cards", "girl→girls"] },
+      { rule: "以 -s/-x/-ch/-sh 结尾加 -es", examples: ["watch→watches", "box→boxes", "brush→brushes", "boss→bosses"] },
+      { rule: "辅音+y 结尾，变 y→i 加 -es", examples: ["fly→flies", "lady→ladies", "baby→babies", "story→stories"] },
+      { rule: "以 -f/-fe 结尾，变 f→v 加 -es", examples: ["wife→wives", "leaf→leaves", "knife→knives", "shelf→shelves"] },
+      { rule: "以 -o 结尾（有生命+es，无生命+s）", examples: ["hero→heroes", "tomato→tomatoes", "piano→pianos", "photo→photos", "radio→radios"] },
+      { rule: "不规则复数", examples: ["man→men", "woman→women", "child→children", "foot→feet", "tooth→teeth", "mouse→mice", "goose→geese", "ox→oxen"] },
+      { rule: "单复数同形", examples: ["fish→fish", "sheep→sheep", "deer→deer", "Chinese→Chinese", "Japanese→Japanese"] },
+      { rule: "可数名词 vs 不可数名词；量词短语", examples: ["a cup of tea", "a loaf of bread", "a piece of cake", "a bar of chocolate", "a bag of flour", "a bottle of water"] },
+      { rule: "few/a few（可数）；little/a little（不可数）", examples: ["few students（几乎没有）", "a few students（有几个）", "little water（几乎没水）", "a little water（有一点）"] },
+      { rule: "some/any；How many/How much", examples: ["I need some milk.", "Do you have any apples?", "How many books? / How much milk?"] },
+    ],
+    quiz: [
+      { q: "\"watch\" 的复数是？", options: ["watchs","watches","watchies","watchs"], answer: 1, level: 1 },
+      { q: "\"child\" 的复数是？", options: ["childs","childes","children","childrens"], answer: 2, level: 1 },
+      { q: "\"leaf\" 的复数是？", options: ["leafs","leaves","leafes","leaf"], answer: 1, level: 1 },
+      { q: "\"sheep\" 的复数是？", options: ["sheeps","sheepes","sheepies","sheep"], answer: 3, level: 1 },
+      { q: "\"tomato\" 的复数是？", options: ["tomatos","tomatoes","tomatoies","tomatoy"], answer: 1, level: 2 },
+      { q: "\"photo\" 的复数是？", options: ["photos","photoes","photies","photys"], answer: 0, level: 2 },
+      { q: "填空：We need to buy a ___ of flour.", options: ["cup","bar","bag","slice"], answer: 2, level: 2 },
+      { q: "填空：There ___ few students — almost all are on the playground.", options: ["is","are","was","were"], answer: 1, level: 2 },
+      { q: "哪句话正确？", options: ["I have many moneys.","She has much books.","We need some rice.","They want any water."], answer: 2, level: 3 },
+      { q: "\"There are three ___ and seven ___ in the picture.\" (duck/sheep)", options: ["ducks; sheeps","duck; sheep","ducks; sheep","duck; sheeps"], answer: 2, level: 3 },
+    ]
+  },
+
+  {
+    id: 2, day: 1, title: "考点2 代词 (Pronouns)", emoji: "👤", color: "#FF8E53", category: "DAY 1",
+    rules: [
+      { rule: "主格代词（作主语）", examples: ["I, you, he, she, it, we, they"] },
+      { rule: "宾格代词（作宾语）", examples: ["me, you, him, her, it, us, them"] },
+      { rule: "形容词性物主代词（后接名词）", examples: ["my, your, his, her, its, our, their + 名词"] },
+      { rule: "名词性物主代词（单独使用，不接名词）", examples: ["mine, yours, his, hers, its, ours, theirs"] },
+      { rule: "反身代词", examples: ["myself, yourself, himself, herself, itself, ourselves, themselves"] },
+      { rule: "不定代词：some-/any-/no-/every- 系列", examples: ["something/anything/nothing/everything", "someone/anyone/no one/everyone", "somewhere/anywhere/nowhere/everywhere"] },
+      { rule: "both（两者都）/ either（两者之一）/ neither（两者都不）", examples: ["Both of us are students.", "Either of us will win.", "Neither of us is late."] },
+    ],
+    quiz: [
+      { q: "填空：___ is my best friend.（他）", options: ["Him","He","His","Himself"], answer: 1, level: 1 },
+      { q: "填空：Please give ___ the book.（她）", options: ["she","her","hers","herself"], answer: 1, level: 1 },
+      { q: "填空：This is ___ pencil.（我的，后接名词）", options: ["I","me","my","mine"], answer: 2, level: 1 },
+      { q: "填空：The book is ___.（我们的，单独使用）", options: ["our","ours","we","us"], answer: 1, level: 1 },
+      { q: "填空：He hurt ___ playing football.", options: ["him","his","himself","he"], answer: 2, level: 2 },
+      { q: "填空：There isn't ___ in the classroom.（否定句）", options: ["somebody","anybody","nobody","everybody"], answer: 1, level: 2 },
+      { q: "填空：___ called you this afternoon.（有人）", options: ["Anyone","No one","Someone","Everyone"], answer: 2, level: 2 },
+      { q: "填空：Both of ___ are students.（我们）", options: ["we","us","our","ours"], answer: 1, level: 2 },
+      { q: "填空：The little baby ate food by ___.（他自己）", options: ["him","his","himself","he"], answer: 2, level: 3 },
+      { q: "填空：Your classroom is bigger than ___.（我们的）", options: ["our","us","ours","we"], answer: 2, level: 3 },
+    ]
+  },
+
+  // ── DAY 2 ────────────────────────────────────────────────
+  {
+    id: 3, day: 2, title: "考点3 形容词 (Adjectives)", emoji: "📊", color: "#FFC300", category: "DAY 2",
+    rules: [
+      { rule: "单音节：直接加 -er / -est", examples: ["tall→taller→tallest", "fast→faster→fastest", "strong→stronger→strongest"] },
+      { rule: "以 -e 结尾：加 -r / -st", examples: ["large→larger→largest", "nice→nicer→nicest", "late→later→latest"] },
+      { rule: "辅音+短元音：双写辅音 + -er/-est", examples: ["big→bigger→biggest", "hot→hotter→hottest", "fat→fatter→fattest"] },
+      { rule: "辅音+y 结尾：变 y→i + -er/-est", examples: ["happy→happier→happiest", "lazy→lazier→laziest", "pretty→prettier→prettiest"] },
+      { rule: "多音节词：more / most", examples: ["beautiful→more beautiful→most beautiful", "expensive→more expensive→most expensive"] },
+      { rule: "不规则变化", examples: ["good/well→better→best", "bad/ill→worse→worst", "many/much→more→most", "little→less→least", "far→farther→farthest"] },
+      { rule: "as...as...（同级比较）", examples: ["Tom is as tall as Bob.", "This is not as big as that one.（= smaller than）"] },
+      { rule: "one of the + 最高级 + 复数名词", examples: ["Tom is one of the tallest students in our class.", "The Nile is one of the longest rivers in the world."] },
+    ],
+    quiz: [
+      { q: "\"big\" 的比较级是？", options: ["biger","bigger","more big","bigest"], answer: 1, level: 1 },
+      { q: "\"good\" 的最高级是？", options: ["goodest","most good","best","better"], answer: 2, level: 1 },
+      { q: "\"happy\" 的最高级是？", options: ["happyest","most happy","happiest","happily"], answer: 2, level: 1 },
+      { q: "\"beautiful\" 的比较级是？", options: ["beautifuler","more beautiful","beautifuller","most beautiful"], answer: 1, level: 1 },
+      { q: "填空：Tom is ___ than Jack.（tall）", options: ["tall","taller","tallest","more tall"], answer: 1, level: 2 },
+      { q: "填空：She is the ___ student in our class.（smart）", options: ["smart","smarter","smartest","most smart"], answer: 2, level: 2 },
+      { q: "填空：The city is much ___ than before.", options: ["good","well","better","best"], answer: 2, level: 2 },
+      { q: "填空：My room is as ___ as yours.（large）", options: ["large","larger","largest","more large"], answer: 0, level: 2 },
+      { q: "填空：Tom is one of the ___ students in our class.（tall）", options: ["tall","taller","tallest","most tall"], answer: 2, level: 3 },
+      { q: "找出错误：\"I study as harder as my sister.\"", options: ["I study","as harder","as my","sister"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 4, day: 2, title: "考点4 介词 (Prepositions)", emoji: "📍", color: "#00C49A", category: "DAY 2",
+    rules: [
+      { rule: "时间介词 at / on / in", examples: ["at 8 o'clock / at night / at noon / at the weekend", "on Monday / on May 1st / on weekdays", "in July / in 2024 / in the morning / in winter"] },
+      { rule: "地点介词 at / in / on", examples: ["at school/home/work/the bus stop", "in Beijing / in the box / in the water", "on the table / on the wall / on the left"] },
+      { rule: "方位介词", examples: ["over（正上方）/ above（上方）", "under / beneath / below（下方）", "in front of / behind", "between（两者之间）/ among（三者以上）"] },
+      { rule: "方向介词 across / through / into / out of", examples: ["across the street（穿越平面）", "through the forest（穿越内部）", "into the room / out of the house"] },
+      { rule: "时间介词 from...to / since / for / during", examples: ["from 9 am to 5 pm", "since 2020（从某时到现在）", "for two hours（持续时长）", "during the holiday"] },
+    ],
+    quiz: [
+      { q: "填空：I was born ___ 2015.", options: ["at","on","in","by"], answer: 2, level: 1 },
+      { q: "填空：The meeting is ___ Monday morning.", options: ["at","on","in","by"], answer: 1, level: 1 },
+      { q: "填空：School starts ___ 8 o'clock.", options: ["at","on","in","by"], answer: 0, level: 1 },
+      { q: "填空：She is good ___ English.", options: ["at","on","in","for"], answer: 0, level: 1 },
+      { q: "填空：The cat is sitting ___ the box.（在里面）", options: ["on","in","at","over"], answer: 1, level: 2 },
+      { q: "填空：The plane is flying ___ the city.（正上方）", options: ["on","above","over","under"], answer: 2, level: 2 },
+      { q: "填空：We usually do exercise ___ the morning.", options: ["at","on","in","during"], answer: 2, level: 2 },
+      { q: "填空：I'll arrive ___ the airport tomorrow.", options: ["in","on","at","to"], answer: 2, level: 2 },
+      { q: "填空：The man is running ___ the park.（穿越公园内部）", options: ["across","through","over","between"], answer: 1, level: 3 },
+      { q: "填空：She sat down ___ her mother and father.（两人之间）", options: ["among","between","across","through"], answer: 1, level: 3 },
+    ]
+  },
+
+  // ── DAY 3 ────────────────────────────────────────────────
+  {
+    id: 5, day: 3, title: "考点5 连词 (Conjunctions)", emoji: "🔗", color: "#A29BFE", category: "DAY 3",
+    rules: [
+      { rule: "and / but / or / so（并列连词）", examples: ["I went to the shop and bought some food.", "I got up late, so I missed the bus.", "Work hard, or you will fail."] },
+      { rule: "because（因为）/ since（既然）/ until（直到）", examples: ["I was late because I missed the bus.", "Since you are here, let's start.", "I didn't sleep until nine o'clock."] },
+      { rule: "both...and...（两者都）", examples: ["Both Tom and Bob are students.", "Both you and I love music."] },
+      { rule: "either...or...（两者之一）", examples: ["Either he or I will win.", "Either pizza or burger is OK."] },
+      { rule: "neither...nor...（两者都不）", examples: ["Neither Tom nor Bob is a teacher.", "Neither my father nor my mother works here."] },
+      { rule: "not only...but also...（不但...而且）", examples: ["He can speak not only English but also French.", "Not only the teacher but also his students were asked to read."] },
+    ],
+    quiz: [
+      { q: "填空：Work hard, ___ you will succeed.", options: ["but","or","and","so"], answer: 2, level: 1 },
+      { q: "填空：I'm tired, ___ I want to go to bed.", options: ["but","or","so","because"], answer: 2, level: 1 },
+      { q: "填空：___ Tom and Bob are students.", options: ["Both","Either","Neither","Not only"], answer: 0, level: 1 },
+      { q: "填空：He can speak not only English ___ also French.", options: ["or","but","and","nor"], answer: 1, level: 1 },
+      { q: "填空：___ my father nor my mother works at university.", options: ["Both","Either","Neither","Not only"], answer: 2, level: 2 },
+      { q: "填空：I didn't sleep ___ nine o'clock last night.", options: ["and","so","but","until"], answer: 3, level: 2 },
+      { q: "填空：I got up late, ___ I didn't catch the bus.", options: ["but","or","so","because"], answer: 2, level: 2 },
+      { q: "找出错误：\"Either Tom or Lily are the winner.\"", options: ["Either","or Lily","are","the winner"], answer: 2, level: 3 },
+      { q: "找出错误：\"Both you and your sister is top students.\"", options: ["Both","and your sister","is","top students"], answer: 2, level: 3 },
+      { q: "填空：I have prepared for a long time, ___ I didn't pass.", options: ["and","but","so","or"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 6, day: 3, title: "考点6 程度副词 enough 和 too", emoji: "⚡", color: "#FDCB6E", category: "DAY 3",
+    rules: [
+      { rule: "too + 形容词/副词 + to do（太...而不能）", examples: ["She is too young to drive.", "He is too poor to afford the bill.", "It's too cold to go outside."] },
+      { rule: "形容词/副词 + enough + to do（足够...可以）", examples: ["She is old enough to go to school.", "The bag is big enough to hold all the books.", "He is strong enough to carry the box."] },
+      { rule: "not + 形容词 + enough（不够...）= too + 反义词 + to", examples: ["She is not old enough to drive. = She is too young to drive.", "The water is not warm enough to swim in. = The water is too cold to swim in."] },
+      { rule: "too...for sb. to do（对某人来说太...）", examples: ["The fog is too thick for me to see the road.", "The computer is too expensive for me to buy."] },
+    ],
+    quiz: [
+      { q: "填空：She is ___ young to go to school alone.", options: ["very","too","quite","so"], answer: 1, level: 1 },
+      { q: "填空：The box is big ___ to put all the books.", options: ["too","very","enough","so"], answer: 2, level: 1 },
+      { q: "填空：He is ___ poor to afford the bill.", options: ["very","too","quite","enough"], answer: 1, level: 1 },
+      { q: "填空：She is not old ___ to drive.", options: ["too","very","enough","so"], answer: 2, level: 1 },
+      { q: "改写：\"The girl is too short to see the stage.\"", options: ["The girl is short enough to see the stage.","The girl is not tall enough to see the stage.","The girl is enough short to see.","The girl is very short to see."], answer: 1, level: 2 },
+      { q: "改写：\"The water is not warm enough to swim in.\"", options: ["The water is too cold to swim in.","The water is enough cold to swim in.","The water is very cold to swim in.","The water is too warm to swim in."], answer: 0, level: 2 },
+      { q: "填空：It is ___ cold in the room. May I close the window?", options: ["enough","too","very","so"], answer: 1, level: 2 },
+      { q: "填空：The computer is ___ expensive for me to buy.", options: ["very","enough","too","so"], answer: 2, level: 3 },
+      { q: "填空：The fog is ___ thick ___ me to see the road.", options: ["too; for","enough; for","so; that","very; to"], answer: 0, level: 3 },
+      { q: "填空：I can't put on this sweater; it's not big ___.", options: ["too","very","enough","so"], answer: 2, level: 3 },
+    ]
+  },
+
+  // ── DAY 4 ────────────────────────────────────────────────
+  {
+    id: 7, day: 4, title: "考点7 一般现在时 (Simple Present)", emoji: "⏰", color: "#FF7675", category: "DAY 4",
+    rules: [
+      { rule: "结构：主语 + 动词原形（三单加 -s/-es）", examples: ["I play football.", "She plays football every day.", "He watches TV after dinner."] },
+      { rule: "三单变化规则", examples: ["go→goes", "teach→teaches", "fly→flies", "have→has", "wash→washes", "study→studies"] },
+      { rule: "否定：don't / doesn't + 动词原形", examples: ["I don't like math.", "She doesn't eat meat.", "They don't watch TV."] },
+      { rule: "疑问：Do / Does + 主语 + 动词原形？", examples: ["Do you like football?", "Does she speak Chinese?", "What does he do?"] },
+      { rule: "常用时间状语", examples: ["always, usually, often, sometimes, seldom, never", "every day/week, on weekdays/Sundays"] },
+    ],
+    quiz: [
+      { q: "填空：She ___ to school every day.（go）", options: ["go","goes","went","is going"], answer: 1, level: 1 },
+      { q: "填空：They ___ like vegetables.（否定）", options: ["don't","doesn't","isn't","aren't"], answer: 0, level: 1 },
+      { q: "填空：___ he speak English?", options: ["Do","Does","Is","Are"], answer: 1, level: 1 },
+      { q: "\"watch\" 的三单形式是？", options: ["watchs","watches","watchies","watch"], answer: 1, level: 1 },
+      { q: "填空：My father always ___ the newspaper in the morning.", options: ["read","reads","reading","is reading"], answer: 1, level: 2 },
+      { q: "填空：The moon ___ around the earth.", options: ["move","moves","is moving","moved"], answer: 1, level: 2 },
+      { q: "填空：It often ___ me 30 minutes to walk to school.", options: ["take","takes","took","is taking"], answer: 1, level: 2 },
+      { q: "找出错误：\"She don't go to school on weekends.\"", options: ["She","don't","go","weekends"], answer: 1, level: 3 },
+      { q: "填空：___ he often read books?", options: ["Do","Did","Has","Does"], answer: 3, level: 3 },
+      { q: "填空：Bob ___ many subjects at school, such as English, Chinese and Art.", options: ["study","studies","studied","has studied"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 8, day: 4, title: "考点8 一般过去时 (Simple Past)", emoji: "⏳", color: "#00B894", category: "DAY 4",
+    rules: [
+      { rule: "规则动词 + -ed（注意双写/变y为i）", examples: ["play→played", "stop→stopped", "study→studied", "dance→danced"] },
+      { rule: "不规则动词（重点）", examples: ["go→went", "see→saw", "have→had", "come→came", "do→did", "say→said", "get→got", "make→made", "take→took", "give→gave", "buy→bought", "think→thought", "teach→taught", "build→built", "leave→left", "win→won"] },
+      { rule: "否定：didn't + 动词原形", examples: ["I didn't go to school yesterday.", "She didn't finish her homework."] },
+      { rule: "疑问：Did + 主语 + 动词原形？", examples: ["Did you go shopping?", "What did she say?"] },
+      { rule: "常用时间状语", examples: ["yesterday, last week/year, two days ago, just now, once upon a time, in 2020, at the age of..."] },
+    ],
+    quiz: [
+      { q: "\"go\" 的过去式是？", options: ["goed","gone","went","going"], answer: 2, level: 1 },
+      { q: "填空：She ___ TV last night.（watch）", options: ["watch","watches","watched","watching"], answer: 2, level: 1 },
+      { q: "填空：___ you see that film yesterday?", options: ["Do","Does","Did","Have"], answer: 2, level: 1 },
+      { q: "\"stop\" 的过去式是？", options: ["stoped","stopped","stoping","stops"], answer: 1, level: 1 },
+      { q: "填空：They ___ not come to the party.（过去式否定）", options: ["do","does","did","done"], answer: 2, level: 2 },
+      { q: "找出错误：\"She reads lots of books when she was young.\"", options: ["She","reads","when","was"], answer: 1, level: 2 },
+      { q: "填空：What ___ she do last Monday?", options: ["do","did","does","have"], answer: 1, level: 2 },
+      { q: "\"build\" 的过去式是？", options: ["builded","builds","built","builed"], answer: 2, level: 3 },
+      { q: "找出错误：\"I receive a letter from my brother this morning.\"（强调已发生）", options: ["I","receive","a letter","this morning"], answer: 1, level: 3 },
+      { q: "填空：Peter didn't ___ in Japan.（live）", options: ["live","lived","lives","living"], answer: 0, level: 3 },
+    ]
+  },
+
+  // ── DAY 5 ────────────────────────────────────────────────
+  {
+    id: 9, day: 5, title: "考点9 现在进行时 (Present Continuous)", emoji: "🏃", color: "#6C5CE7", category: "DAY 5",
+    rules: [
+      { rule: "结构：am/is/are + 动词 -ing", examples: ["I am reading.", "She is running.", "They are playing football."] },
+      { rule: "-ing 变化规则", examples: ["run→running（双写）", "sit→sitting（双写）", "make→making（去e）", "swim→swimming（双写）", "die→dying（ie→y）", "study→studying"] },
+      { rule: "否定：am/is/are + not + 动词-ing", examples: ["He is not sleeping.", "We aren't watching TV."] },
+      { rule: "疑问：Am/Is/Are + 主语 + 动词-ing？", examples: ["Is she dancing?", "What are you doing now?"] },
+      { rule: "常用时间状语（触发词）", examples: ["now, at the moment, at present", "Look! Listen!（提示正在进行）"] },
+    ],
+    quiz: [
+      { q: "填空：Look! The children ___ in the park.（play）", options: ["play","plays","are playing","played"], answer: 2, level: 1 },
+      { q: "\"swim\" 的 -ing 形式是？", options: ["swiming","swimming","swims","swimmed"], answer: 1, level: 1 },
+      { q: "填空：Listen! Someone ___ outside.（sing）", options: ["sing","sings","is singing","was singing"], answer: 2, level: 1 },
+      { q: "\"make\" 的 -ing 形式是？", options: ["makeing","making","macking","makes"], answer: 1, level: 1 },
+      { q: "填空：She ___ not ___ TV now.（watch）", options: ["is/watching","does/watching","is/watch","do/watch"], answer: 0, level: 2 },
+      { q: "填空：What ___ you ___ now?（do）", options: ["are/doing","do/do","does/doing","is/doing"], answer: 0, level: 2 },
+      { q: "找出错误：\"The teacher is teach in the class.\"", options: ["The teacher","is","teach","in the class"], answer: 2, level: 2 },
+      { q: "填空：The cat ___ the tree at the moment.（climb）", options: ["climb","climbs","climbing","is climbing"], answer: 3, level: 3 },
+      { q: "\"die\" 的 -ing 形式是？", options: ["dieing","dying","diing","dies"], answer: 1, level: 3 },
+      { q: "填空：Look, the girl who is ___ a red dress is my sister.", options: ["wears","wearing","wore","wear"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 10, day: 5, title: "考点10 过去进行时 (Past Continuous)", emoji: "⏪", color: "#E17055", category: "DAY 5",
+    rules: [
+      { rule: "结构：was/were + 动词-ing（过去某时正在进行）", examples: ["I was reading at 9 pm yesterday.", "They were playing football at that time.", "My grandpa was reading a newspaper at this time yesterday."] },
+      { rule: "否定：was/were + not + 动词-ing", examples: ["She was not skiing at that time.", "They weren't watching TV."] },
+      { rule: "疑问：Was/Were + 主语 + 动词-ing？", examples: ["Was she cooking?", "What were you doing at this time yesterday?"] },
+      { rule: "when 从句（when + 一般过去时）", examples: ["I was reading when she called me.", "When the teacher came in, we were reading books."] },
+      { rule: "while 从句（两个同时进行的动作）", examples: ["While my mother was cooking, my father was cleaning.", "While I was doing homework, I heard a sound outside."] },
+    ],
+    quiz: [
+      { q: "填空：I ___ with a friend when my teacher came in.（talk）", options: ["talked","was talking","am talking","talk"], answer: 1, level: 1 },
+      { q: "填空：What ___ you ___ at this time yesterday?", options: ["were/doing","are/doing","did/do","do/do"], answer: 0, level: 1 },
+      { q: "填空：She ___ skiing at that time.（否定）", options: ["wasn't","didn't","isn't","don't"], answer: 0, level: 1 },
+      { q: "填空：While my sister ___ a film, I was reading.", options: ["see","saw","was seeing","is seeing"], answer: 2, level: 2 },
+      { q: "填空：He ___ TV when I visited him this morning.", options: ["wasn't watching","didn't watch","doesn't watch","hasn't watched"], answer: 0, level: 2 },
+      { q: "填空：My mother ___ when someone knocked at the door.（cook）", options: ["cooked","was cooking","is cooking","cooks"], answer: 1, level: 2 },
+      { q: "找出错误：\"The students were talk when the stranger came in.\"", options: ["were","talk","when","came"], answer: 1, level: 3 },
+      { q: "填空：When we ___ on the street, he waved to us.", options: ["walked","walk","were walking","are walking"], answer: 2, level: 3 },
+      { q: "填空：While I ___ my homework, I ___ a sound outside.（do/hear）", options: ["was doing/heard","am doing/hear","was doing/hear","did/heard"], answer: 0, level: 3 },
+      { q: "找出错误：\"When we were having breakfast, someone knocks at the door.\"", options: ["were having","breakfast","knocks","at the door"], answer: 2, level: 3 },
+    ]
+  },
+
+  // ── DAY 6 ────────────────────────────────────────────────
+  {
+    id: 11, day: 6, title: "考点11 一般将来时 (Simple Future)", emoji: "🚀", color: "#74B9FF", category: "DAY 6",
+    rules: [
+      { rule: "will + 动词原形（临时决定/预测/许诺）", examples: ["It will rain tomorrow.", "I'll help you.", "She will be a doctor."] },
+      { rule: "be going to + 动词原形（计划/有迹象）", examples: ["I am going to visit my grandma next week.", "Look at the clouds — it's going to rain."] },
+      { rule: "will 否定：won't + 动词原形", examples: ["I won't forget your birthday.", "He won't be late."] },
+      { rule: "be going to 否定/疑问", examples: ["She isn't going to study abroad.", "Are you going to go shopping?"] },
+      { rule: "常用时间状语", examples: ["tomorrow, next week/year, in three days, in the future, soon"] },
+    ],
+    quiz: [
+      { q: "填空：I think it ___ rain tomorrow.", options: ["is","will","going to","does"], answer: 1, level: 1 },
+      { q: "填空：She ___ going to visit her aunt next week.", options: ["will","is","does","are"], answer: 1, level: 1 },
+      { q: "填空：We ___ go skating next winter.", options: ["are","is","will","do"], answer: 2, level: 1 },
+      { q: "\"will\" 的否定缩写是？", options: ["willn't","won't","wouldn't","willon't"], answer: 1, level: 1 },
+      { q: "找出错误：\"We will had a picnic this afternoon.\"", options: ["We","will","had","this afternoon"], answer: 2, level: 2 },
+      { q: "找出错误：\"Suzy is going visit her grandparents.\"", options: ["Suzy","is going","visit","grandparents"], answer: 2, level: 2 },
+      { q: "填空：___ you be free tomorrow?", options: ["Do","Does","Are","Will"], answer: 3, level: 2 },
+      { q: "填空：If it rains tomorrow, we ___ play football outside.", options: ["are going to","won't","will","don't"], answer: 1, level: 3 },
+      { q: "填空：He ___ back in three days.", options: ["came","has come","had come","will be"], answer: 3, level: 3 },
+      { q: "填空：Look at the clouds! It ___ rain soon.", options: ["will","is going to","is","shall"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 12, day: 6, title: "考点12 现在完成时 (Present Perfect)", emoji: "✅", color: "#55EFC4", category: "DAY 6",
+    rules: [
+      { rule: "结构：have/has + 过去分词", examples: ["I have finished my homework.", "She has visited Paris.", "He has just arrived."] },
+      { rule: "have been to（去过，已回来）vs have gone to（去了，不在）", examples: ["I have been to America.（我去过美国）", "He has gone to America.（他去美国了，不在）"] },
+      { rule: "否定：haven't/hasn't + 过去分词", examples: ["I haven't eaten breakfast yet.", "She hasn't called me."] },
+      { rule: "常用标志词", examples: ["already（已经）、just（刚刚）—肯定句", "yet（还/已）—否定/疑问", "ever/never（曾/从未）", "since + 时间点", "for + 时间段"] },
+      { rule: "重要不规则过去分词", examples: ["go→gone", "see→seen", "eat→eaten", "give→given", "write→written", "be→been", "do→done", "take→taken"] },
+    ],
+    quiz: [
+      { q: "填空：She ___ already ___ her homework.（finish）", options: ["has/finished","have/finished","is/finishing","did/finish"], answer: 0, level: 1 },
+      { q: "填空：I ___ never ___ sushi before.（eat）", options: ["have/eat","have/ate","have/eaten","had/eaten"], answer: 2, level: 1 },
+      { q: "填空：He ___ just left the office.", options: ["have","has","did","is"], answer: 1, level: 1 },
+      { q: "填空：They haven't arrived ___.", options: ["already","yet","just","ever"], answer: 1, level: 1 },
+      { q: "\"see\" 的过去分词是？", options: ["saw","seen","seeend","see"], answer: 1, level: 2 },
+      { q: "填空：I have lived here ___ 2010.（自2010年起）", options: ["for","since","in","at"], answer: 1, level: 2 },
+      { q: "填空：She has been a teacher ___ many years.（持续多年）", options: ["for","since","ago","before"], answer: 0, level: 2 },
+      { q: "填空：He is not working; he has ___ to New York.", options: ["been","gone","went","go"], answer: 1, level: 3 },
+      { q: "找出错误：\"He has lived in Beijing for two years ago.\"", options: ["has lived","in Beijing","for","two years ago"], answer: 3, level: 3 },
+      { q: "填空：My father has just ___ to the bank; he will come back later.", options: ["go","went","gone","been"], answer: 2, level: 3 },
+    ]
+  },
+
+  // ── DAY 7 ── 时态总复习 ────────────────────────────────
+  {
+    id: 13, day: 7, title: "DAY 7 时态总复习 (Tense Review)", emoji: "🔄", color: "#FD79A8", category: "DAY 7",
+    rules: [
+      { rule: "一般现在时 vs 现在进行时", examples: ["She reads books every day.（习惯）", "She is reading a book now.（此刻）", "标志：always/usually/often vs now/look/listen"] },
+      { rule: "一般过去时 vs 过去进行时", examples: ["He watched TV yesterday.（已完成）", "He was watching TV when I called.（当时正在）", "标志：yesterday/ago vs when/while"] },
+      { rule: "一般过去时 vs 现在完成时", examples: ["I saw him yesterday.（具体时间）", "I have seen him before.（经历，无具体时间）", "标志：yesterday/ago ↔ already/just/ever/since/for"] },
+      { rule: "一般将来时的两种形式对比", examples: ["will（临时/预测）: I'll help you.", "be going to（计划/有迹象）: I'm going to visit grandma."] },
+      { rule: "时态综合判断口诀", examples: ["看时间状语 → yesterday/ago=过去时", "now/at the moment=进行时", "since/for/already=完成时", "tomorrow/next=将来时"] },
+    ],
+    quiz: [
+      { q: "填空：Look, the man ___ in the boat.（fish）", options: ["fishes","fishing","is fishing","fish"], answer: 2, level: 1 },
+      { q: "填空：My aunt ___ in London for three years.", options: ["has lived","lives","lived","is living"], answer: 0, level: 1 },
+      { q: "填空：I ___ a teacher five years ago.", options: ["be","have been","am","was"], answer: 3, level: 1 },
+      { q: "填空：When we ___ on the street, he waved to us.", options: ["walked","walk","were walking","are walking"], answer: 2, level: 2 },
+      { q: "填空：My grandfather ___ up early to cook for us.（习惯）", options: ["is getting","get","got","gets"], answer: 3, level: 2 },
+      { q: "填空：Up to now, they ___ more than 100 trees.", options: ["have planted","plant","are planting","has planted"], answer: 0, level: 2 },
+      { q: "填空：I ___ back in a few days.", options: ["will be","am","go","will"], answer: 0, level: 2 },
+      { q: "填空：If it ___ tomorrow, we can go skiing.", options: ["snow","snows","snowed","is snowing"], answer: 1, level: 3 },
+      { q: "填空：This is Miss White; she ___ us English this term.（现在正在教）", options: ["teaches","taught","is teaching","has taught"], answer: 2, level: 3 },
+      { q: "填空：That girl can't be Lisa; she ___ to Japan.", options: ["goes","went","has gone","is going"], answer: 2, level: 3 },
+    ]
+  },
+
+  // ── DAY 8 ────────────────────────────────────────────────
+  {
+    id: 14, day: 8, title: "考点13 情态动词 (Modal Verbs)", emoji: "💡", color: "#E17055", category: "DAY 8",
+    rules: [
+      { rule: "can（能力/许可/推断否定）", examples: ["Can you swim?", "You can go now.", "This can't be true.（不可能）"] },
+      { rule: "must（必须/强烈推断）vs mustn't（禁止）", examples: ["You must finish your homework.", "He must be tired.（一定）", "You mustn't smoke here.（禁止）"] },
+      { rule: "don't have to（不必须，有选择）", examples: ["You don't have to wear a tie.（不用，但可以）", "We needn't buy things we won't use."] },
+      { rule: "should（建议/应该）", examples: ["You should eat more vegetables.", "She should see a doctor."] },
+      { rule: "may/might（可能性/礼貌请求）", examples: ["It may rain tonight.（也许）", "May I come in?（请求）", "She might be at home.（可能）"] },
+      { rule: "could（过去能力/礼貌请求）", examples: ["He could write poems when he was seven.", "Could you help me, please?"] },
+      { rule: "have to（外部义务，有时态）", examples: ["I have to go now.", "I had to buy a new pen yesterday.（过去不得不）"] },
+    ],
+    quiz: [
+      { q: "填空：You ___ wear a seatbelt. It's the law.", options: ["can","should","must","might"], answer: 2, level: 1 },
+      { q: "填空：You ___ drive yet, you're only 14.（不能）", options: ["can't","must","should","have to"], answer: 0, level: 1 },
+      { q: "填空：She looks tired. She ___ sleep more.（建议）", options: ["can","should","might","mustn't"], answer: 1, level: 1 },
+      { q: "填空：You ___ be quiet in the library.（禁止说话）", options: ["don't have to","mustn't","can","should"], answer: 1, level: 1 },
+      { q: "填空：It ___ rain today. The sky is very dark.（可能）", options: ["can","should","may","mustn't"], answer: 2, level: 2 },
+      { q: "填空：He must ___ tired; he has worked for 10 hours.", options: ["be","is","are","being"], answer: 0, level: 2 },
+      { q: "填空：That boy ___ be Tom; he has gone abroad.（不可能）", options: ["must","can't","should","may"], answer: 1, level: 2 },
+      { q: "填空：I ___ buy a new pen yesterday.（不得不，过去）", options: ["must","have to","had to","should"], answer: 2, level: 3 },
+      { q: "找出错误：\"You don't has to book the ticket.\"", options: ["You","don't has","to","book"], answer: 1, level: 3 },
+      { q: "填空：The talented boy ___ write poems when he was seven.（过去能）", options: ["can","may","could","must"], answer: 2, level: 3 },
+    ]
+  },
+
+  {
+    id: 15, day: 8, title: "考点14 被动语态 (Passive Voice)", emoji: "🔁", color: "#A29BFE", category: "DAY 8",
+    rules: [
+      { rule: "结构：be + 过去分词（by + 执行者，可省略）", examples: ["The museum is visited every day.", "The book was written by J.K. Rowling.", "The bridge was built in 1990."] },
+      { rule: "一般现在时被动：am/is/are + 过去分词", examples: ["English is learned by many children.", "Rice is grown here.", "The door is locked."] },
+      { rule: "一般过去时被动：was/were + 过去分词", examples: ["The cinema was built in 2000.", "The pictures were painted by that girl.", "The mistake was corrected yesterday."] },
+      { rule: "情态动词被动：情态动词 + be + 过去分词", examples: ["The bridge should be built here.", "The letter must be sent today.", "The room can be cleaned."] },
+      { rule: "否定与疑问", examples: ["The museum is not visited every day.", "Was the book read by many people?", "Were the pictures painted by her?"] },
+    ],
+    quiz: [
+      { q: "填空：This house ___ 20 years ago.（build）", options: ["built","was built","is built","build"], answer: 1, level: 1 },
+      { q: "填空：English ___ by many children all over the world.（learn）", options: ["learns","learned","is learned","are learned"], answer: 2, level: 1 },
+      { q: "填空：The ducks ___ every day.（feed）", options: ["feed","are fed","were fed","fed"], answer: 1, level: 1 },
+      { q: "填空：The mistake ___ yesterday.（correct）", options: ["correct","corrected","was corrected","is corrected"], answer: 2, level: 2 },
+      { q: "找出错误：\"The book was write in 2000.\"", options: ["The book","was","write","in 2000"], answer: 2, level: 2 },
+      { q: "填空：The important letter ___ to Tim last month.（send）", options: ["sent","sends","was sent","is sent"], answer: 2, level: 2 },
+      { q: "找出错误：\"How many trees are planted last year?\"", options: ["How many","trees","are planted","last year"], answer: 2, level: 3 },
+      { q: "填空：The interesting story ___ to the kids every night.（tell）", options: ["often tells","is often told","often told","often tell"], answer: 1, level: 3 },
+      { q: "改写成被动语态：\"Tom uses the room.\"", options: ["The room uses Tom.","The room is used by Tom.","The room was used by Tom.","The room is using by Tom."], answer: 1, level: 3 },
+      { q: "填空：The Summer Palace ___ all over the world.（know）", options: ["knows","is known","was known","are known"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 16, day: 8, title: "考点15 定语从句 (Relative Clauses)", emoji: "🧩", color: "#FFC300", category: "DAY 8",
+    rules: [
+      { rule: "who 修饰\"人\"（作主语）", examples: ["The man who lives next door is a doctor.", "The students who work hard will pass."] },
+      { rule: "whom 修饰\"人\"（作宾语，正式）", examples: ["The man whom I met yesterday is a teacher.", "The girl whom you saw is my sister."] },
+      { rule: "which 修饰\"物\"", examples: ["The book which is on the table is mine.", "This is the car which I like."] },
+      { rule: "that 修饰人或物（非正式，常用）", examples: ["The dog that I have is friendly.", "The boy that won was my cousin."] },
+      { rule: "whose 表示所属关系", examples: ["The student whose bag is red is Tom.", "The boy whose father is a doctor wants to be a doctor."] },
+    ],
+    quiz: [
+      { q: "填空：The students ___ work hard will pass.（修饰人，作主语）", options: ["which","who","whose","whom"], answer: 1, level: 1 },
+      { q: "填空：The book ___ you lent me is great.（修饰物）", options: ["who","whom","which","whose"], answer: 2, level: 1 },
+      { q: "填空：The girl ___ father is a teacher is Lisa.（所属）", options: ["who","which","whose","that"], answer: 2, level: 1 },
+      { q: "填空：I like the dress ___ she wore yesterday.", options: ["who","whose","which","when"], answer: 2, level: 2 },
+      { q: "以下哪句话正确？", options: ["The man which called is my uncle.","The man who called is my uncle.","The man whose called is my uncle.","The man whom called is my uncle."], answer: 1, level: 2 },
+      { q: "找出错误：\"I bought a book who is red.\"", options: ["I","bought","who","red"], answer: 2, level: 2 },
+      { q: "找出错误：\"That is the man whom is our teacher.\"", options: ["That","the man","whom is","our teacher"], answer: 2, level: 3 },
+      { q: "填空：The people ___ visited the museum are Germans.", options: ["he","which","who","whom"], answer: 2, level: 3 },
+      { q: "填空：That's the car ___ my father bought last year.", options: ["which","who","whose","whom"], answer: 0, level: 3 },
+      { q: "找出错误：\"The woman which you saw yesterday is my teacher.\"", options: ["The woman","which","saw","my teacher"], answer: 1, level: 3 },
+    ]
+  },
+
+  // ── DAY 9 ────────────────────────────────────────────────
+  {
+    id: 17, day: 9, title: "考点16 if 引导的真实条件状语从句", emoji: "🔀", color: "#00CEC9", category: "DAY 9",
+    rules: [
+      { rule: "结构：if + 一般现在时，will/can/should + 动词原形", examples: ["If it rains, I will stay home.", "If you study hard, you will pass.", "If you are free, come and visit me."] },
+      { rule: "零条件句（客观真理）：if + 一般现在时，一般现在时", examples: ["If you heat water, it boils.", "If it rains, the ground gets wet."] },
+      { rule: "注意：if 从句不能用 will", examples: ["If it will rain... ✗", "If it rains... ✓"] },
+      { rule: "unless = if...not（除非）", examples: ["Unless you work hard, you will fail. = If you don't work hard, you will fail."] },
+    ],
+    quiz: [
+      { q: "填空：If it rains tomorrow, I ___ stay at home.", options: ["will","would","am","do"], answer: 0, level: 1 },
+      { q: "以下哪句话正确？", options: ["If she will come, I'll be happy.","If she comes, I'll be happy.","If she came, I'll be happy.","If she come, I'll be happy."], answer: 1, level: 1 },
+      { q: "填空：If you ___ hard, you will succeed.", options: ["will work","work","worked","working"], answer: 1, level: 1 },
+      { q: "填空：If water reaches 100°C, it ___.", options: ["will boil","boils","would boil","boiled"], answer: 1, level: 1 },
+      { q: "填空：If you are tired, you ___ have a rest.", options: ["will","can","should","All are correct"], answer: 3, level: 2 },
+      { q: "填空：If he ___ the flower, it will die.（water/否定）", options: ["waters","doesn't water","don't water","won't water"], answer: 1, level: 2 },
+      { q: "填空：I will send him a present if he ___ me.（invite）", options: ["invites","will invite","invited","invite"], answer: 0, level: 2 },
+      { q: "改写：\"If you don't work hard, you will fail.\"", options: ["Unless you work hard, you will fail.","Unless you don't work hard, you will fail.","If unless you work hard, you fail.","You will fail unless you will work hard."], answer: 0, level: 3 },
+      { q: "找出错误：\"Unless we don't protect the earth, we will have no place to live.\"", options: ["Unless","don't protect","will have","no place"], answer: 1, level: 3 },
+      { q: "填空：If you get up late, you ___ late for school.", options: ["will be","are","were","have been"], answer: 0, level: 3 },
+    ]
+  },
+
+  {
+    id: 18, day: 9, title: "考点17 to do 和 doing（动词搭配）", emoji: "📝", color: "#6C5CE7", category: "DAY 9",
+    rules: [
+      { rule: "动词 + to do（不定式）：want, would like, decide, refuse, hope, agree, promise, learn, fail, pretend, manage, plan", examples: ["I want to buy some books.", "She decided to lose weight.", "He refused to do housework.", "We hope to win the match."] },
+      { rule: "动词 + doing（动名词）：enjoy, mind, finish, avoid, suggest, practise, dislike, hate, fancy, keep, stop（停止）", examples: ["I enjoy reading books.", "Do you mind closing the door?", "She stopped watching TV.", "He practises speaking English every day."] },
+      { rule: "动词 + to do 或 doing（意思不同）：remember, forget, stop", examples: ["remember to do（记得去做）/ remember doing（记得做过）", "stop to do（停下来去做另一事）/ stop doing（停止做）"] },
+      { rule: "Let sb. do / make sb. do（使役动词，不带 to）", examples: ["Let me know if you need help.", "The movie made me cry."] },
+    ],
+    quiz: [
+      { q: "填空：Do you enjoy ___ the violin?（play）", options: ["play","plays","playing","to play"], answer: 2, level: 1 },
+      { q: "填空：I would like ___ some food.（buy）", options: ["buy","bought","buying","to buy"], answer: 3, level: 1 },
+      { q: "填空：She decided ___ weight.（lose）", options: ["losing","lose","to lose","lost"], answer: 2, level: 1 },
+      { q: "填空：Tom refuses ___ housework.（do）", options: ["doing","did","to do","done"], answer: 2, level: 1 },
+      { q: "填空：I don't mind ___ some seafood.（try）", options: ["to try","trying","try","tried"], answer: 1, level: 2 },
+      { q: "填空：Please remember ___ the umbrella; it's going to rain.（带伞去）", options: ["taking","take","to take","took"], answer: 2, level: 2 },
+      { q: "填空：We all hope ___ the match.（win）", options: ["winning","win","to win","won"], answer: 2, level: 2 },
+      { q: "填空：The little boy dislikes ___ medicine.（take）", options: ["to take","taking","take","took"], answer: 1, level: 3 },
+      { q: "找出错误：\"Stop to watch TV; you have watched for too long.\"（应停止看）", options: ["Stop to watch","TV","you have","watched"], answer: 0, level: 3 },
+      { q: "填空：My parents love ___ at home.（cook）", options: ["cook","cooked","to cook / cooking","to cooked"], answer: 2, level: 3 },
+    ]
+  },
+
+  // ── DAY 10 ────────────────────────────────────────────────
+  {
+    id: 19, day: 10, title: "考点18 简单句结构 (Simple Sentences)", emoji: "🏗️", color: "#FF6B6B", category: "DAY 10",
+    rules: [
+      { rule: "五种基本句型", examples: ["① S+V：They married.", "② S+V+P：She looks happy.", "③ S+V+O：I love you.", "④ S+V+O+C：That book makes me happy.", "⑤ S+V+O+O：My teacher gave me a book."] },
+      { rule: "there be 句型（就近原则）", examples: ["There is a cat on the table.", "There are some children on the playground.", "There is/are... ≠ have/has"] },
+      { rule: "感叹句：What + 名词短语！How + 形容词/副词！", examples: ["What a beautiful flower!", "What an interesting story!", "How beautiful she is!", "How fast he runs!"] },
+      { rule: "句子成分：主谓宾定状补", examples: ["I（主）cleaned（谓）the window（宾）carefully（状）in the classroom（状）yesterday（状）."] },
+    ],
+    quiz: [
+      { q: "填空：There ___ some children on the playground.", options: ["is","are","has","have"], answer: 1, level: 1 },
+      { q: "填空：She ___ beautiful.（looks/感官动词）", options: ["looks","look","is looking","looked"], answer: 0, level: 1 },
+      { q: "感叹句：\"___ a beautiful flower!\"", options: ["How","What","Which","Such"], answer: 1, level: 1 },
+      { q: "感叹句：\"___ beautiful the flower is!\"", options: ["How","What","Which","Such"], answer: 0, level: 1 },
+      { q: "填空：My teacher gave ___ a book.（我）", options: ["I","my","me","mine"], answer: 2, level: 2 },
+      { q: "找出错误：\"Listening to music makes I relax.\"", options: ["Listening","to music","makes","I relax"], answer: 3, level: 2 },
+      { q: "填空：That book makes me ___.（happy，形容词）", options: ["happy","happily","happiness","happier"], answer: 0, level: 2 },
+      { q: "以下哪个句子是正确的 there be 句型？", options: ["There has a cat on the table.","There have some apples here.","There are three books on the desk.","There be no food left."], answer: 2, level: 3 },
+      { q: "句型判断：\"My father gave a present me.\" 此句错误，正确应为：", options: ["My father gave a present.","My father gave me a present.","My father gave present to me.","My father gave to me a present."], answer: 1, level: 3 },
+      { q: "感叹句：\"What ___ interesting story!\" 填冠词", options: ["a","an","the","/（不填）"], answer: 1, level: 3 },
+    ]
+  },
+
+  {
+    id: 20, day: 10, title: "考点19 一般疑问句和特殊疑问句", emoji: "❓", color: "#FF8E53", category: "DAY 10",
+    rules: [
+      { rule: "一般疑问句：be动词/助动词提前，答 Yes/No", examples: ["Is he a student? — Yes, he is. / No, he isn't.", "Do you like fish? — Yes, I do. / No, I don't.", "Did she come? — Yes, she did.", "Can I buy something? — Yes, you can."] },
+      { rule: "特殊疑问句：疑问词 + 一般疑问句语序", examples: ["What's his name?", "Where were the boys?", "How does he go to school?", "When did you finish your homework?", "How much will you spend?"] },
+      { rule: "there be 句型的疑问", examples: ["Is there any food in the fridge?", "What are there on the table?", "How many books are there?"] },
+      { rule: "宾语从句中保持陈述语序（不倒装）", examples: ["Tell me what time it is.（✓）", "Tell me what time is it.（✗）", "I don't know where she lives.（✓）"] },
+    ],
+    quiz: [
+      { q: "填空：___ he a student?（一般疑问）", options: ["Do","Does","Is","Are"], answer: 2, level: 1 },
+      { q: "填空：___ you finish your homework?（过去）", options: ["Do","Does","Did","Have"], answer: 2, level: 1 },
+      { q: "填空：___ does he go to school?（方式）", options: ["What","Where","When","How"], answer: 3, level: 1 },
+      { q: "填空：___ were the boys?（地点）", options: ["What","Where","When","How"], answer: 1, level: 1 },
+      { q: "填空：___ books are there on the table?（数量）", options: ["How much","How many","How often","How long"], answer: 1, level: 2 },
+      { q: "填空：___ is his name?（姓名）", options: ["How","Which","What","Where"], answer: 2, level: 2 },
+      { q: "哪句宾语从句语序正确？", options: ["Tell me where does she live.","Tell me where she lives.","Tell me where lives she.","Tell me she lives where."], answer: 1, level: 2 },
+      { q: "填空：Can ___ buy something to eat?（一般疑问）", options: ["I","me","my","mine"], answer: 0, level: 2 },
+      { q: "填空：___ did you have for breakfast?（内容）", options: ["How","Which","What","Where"], answer: 2, level: 3 },
+      { q: "找出错误：\"I don't know where does she live.\"", options: ["I don't know","where","does she","live"], answer: 2, level: 3 },
+    ]
+  },
+];
+
+
+const SR_INTERVALS = [1, 3, 7, 14, 30];
+const CATEGORY_MAP = {
+  "🟠 DAY 1": [1, 2], "🟡 DAY 2": [3, 4], "🔵 DAY 3": [5, 6],
+  "🔵 DAY 4": [7, 8], "🩷 DAY 5": [9, 10], "🩷 DAY 6": [11, 12],
+  "🟢 DAY 7 复习": [13], "🟢 DAY 8": [14, 15, 16],
+  "🟣 DAY 9": [17, 18], "🟡 DAY 10": [19, 20],
+};
+
+const SESSION_KEY = "ket_session_v2";
+
+// ── Firebase 数据库操作封装 ──────────────────────────────
+async function dbRead(path) {
+  try {
+    const snap = await window._fbGet(window._fbRef(window._fbDb, path));
+    return snap.exists() ? snap.val() : null;
+  } catch(e) { console.error("dbRead error", e); return null; }
+}
+async function dbWrite(path, data) {
+  try {
+    await window._fbSet(window._fbRef(window._fbDb, path), data);
+    return true;
+  } catch(e) { console.error("dbWrite error", e); return false; }
+}
+async function dbPatch(path, data) {
+  try {
+    await window._fbUpdate(window._fbRef(window._fbDb, path), data);
+    return true;
+  } catch(e) { console.error("dbPatch error", e); return false; }
+}
+
+function getSession() {
+  try { const r = sessionStorage.getItem(SESSION_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
+}
+function setSession(data) { try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch {} }
+function clearSession() { try { sessionStorage.removeItem(SESSION_KEY); } catch {} }
+
+function encPwd(s) { try { return btoa(unescape(encodeURIComponent(s))); } catch { return btoa(s); } }
+
+function makeProgress(planDays) {
+  const today = new Date().toISOString().split("T")[0];
+  const tp = {};
+  GRAMMAR_TOPICS.forEach(t => { tp[t.id] = { learned:false, quizScore:0, reviewCount:0, nextReview:null, lastReview:null, intervalIdx:0 }; });
+  return { planDays, startDate:today, topicProgress:tp, xp:0 };
+}
+
+// ── Root App ─────────────────────────────────────────────
+function App() {
+  const [fbReady, setFbReady] = useState(!!window._fbReady);
+  const [boot, setBoot]       = useState(true);
+  const [user, setUser]       = useState(null);
+  const [authMode, setAuthMode] = useState("login");
+
+  useEffect(() => {
+    const onReady = async () => {
+      setFbReady(true);
+      const sess = getSession();
+      if (sess) {
+        const u = await dbRead(`users/${sess.username}`);
+        if (u && u.active !== false) {
+          setUser({ username: sess.username, ...u });
+        } else {
+          clearSession();
+        }
+      }
+      setBoot(false);
+    };
+    if (window._fbReady) { onReady(); }
+    else { window.addEventListener("firebase-ready", onReady); }
+    return () => window.removeEventListener("firebase-ready", onReady);
+  }, []);
+
+  const login = (u) => { setUser(u); setSession({ username: u.username }); };
+  const logout = () => { clearSession(); setUser(null); setAuthMode("login"); };
+
+  if (!fbReady || boot) return <Splash text={!fbReady ? "连接云端数据库…" : "启动中…"} />;
+  if (!user) return <AuthScreen mode={authMode} setMode={setAuthMode} onLogin={login} />;
+  if (user.role === "admin") return <AdminApp user={user} onLogout={logout} />;
+  return <StudentApp user={user} onLogout={logout} />;
+}
+
+// ── Splash ───────────────────────────────────────────────
+function Splash({ text }) {
+  return (
+    <div style={S.splash}>
+      <div style={{textAlign:"center",color:"#fff"}}>
+        <div style={{fontSize:64}}>🎓</div>
+        <div style={{fontSize:24,fontWeight:900,marginTop:12}}>KET 语法通关</div>
+        <div style={{fontSize:14,opacity:0.8,marginTop:8}}>{text}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Auth Screen ──────────────────────────────────────────
+function AuthScreen({ mode, setMode, onLogin }) {
+  const isLogin = mode === "login";
+  const [username, setUsername]   = useState("");
+  const [password, setPassword]   = useState("");
+  const [name, setName]           = useState("");
+  const [planDays, setPlanDays]   = useState(30);
+  const [inviteCode, setInviteCode] = useState("");
+  const [error, setError]         = useState("");
+  const [busy, setBusy]           = useState(false);
+
+  const submit = async () => {
+    const uname = username.trim().toLowerCase().replace(/[^a-z0-9_]/g,"");
+    if (!uname || !password) { setError("请填写用户名和密码"); return; }
+    if (!isLogin && !name.trim()) { setError("请填写姓名"); return; }
+    if (!isLogin && uname.length < 3) { setError("用户名至少3个字符（英文/数字）"); return; }
+    if (!isLogin && password.length < 4) { setError("密码至少4位"); return; }
+    setBusy(true); setError("");
+
+    if (isLogin) {
+      const u = await dbRead(`users/${uname}`);
+      if (!u) { setError("账号不存在"); setBusy(false); return; }
+      if (u.active === false) { setError("账号已停用，请联系管理员"); setBusy(false); return; }
+      if (u.password !== encPwd(password)) { setError("密码错误"); setBusy(false); return; }
+      await dbPatch(`users/${uname}`, { lastLogin: new Date().toISOString() });
+      onLogin({ username: uname, ...u });
+    } else {
+      const existing = await dbRead(`users/${uname}`);
+      if (existing) { setError("用户名已被注册，请换一个"); setBusy(false); return; }
+      // 检查是否第一个用户
+      const allUsers = await dbRead("users");
+      const isFirst = !allUsers || Object.keys(allUsers).length === 0;
+      // 邀请码验证（第一个用户=管理员，免验证）
+      if (!isFirst) {
+        const settings = await dbRead("settings") || {};
+        const validCodes = (settings.inviteCodes || ["KET2024"]).map(c=>c.trim().toUpperCase());
+        if (!validCodes.includes(inviteCode.trim().toUpperCase())) {
+          setError("邀请码错误，请联系管理员获取");
+          setBusy(false); return;
+        }
+      }
+      const newUser = {
+        displayName: name.trim(),
+        password: encPwd(password),
+        role: isFirst ? "admin" : "student",
+        active: true,
+        createdAt: new Date().toISOString(),
+        lastLogin: new Date().toISOString(),
+        progress: isFirst ? null : makeProgress(planDays),
+      };
+      await dbWrite(`users/${uname}`, newUser);
+      // 初始化默认邀请码
+      if (isFirst) {
+        await dbWrite("settings", { inviteCodes: ["KET2024"] });
+      }
+      onLogin({ username: uname, ...newUser });
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div style={S.authBg}>
+      <div style={S.authCard}>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:52}}>🎓</div>
+          <div style={{fontSize:22,fontWeight:900,color:"#2d3436",marginTop:8}}>KET 语法通关</div>
+          <div style={{fontSize:13,color:"#636e72",marginTop:4}}>{isLogin?"登录账号开始学习":"注册新账号"}</div>
+        </div>
+        {error && <div style={S.errBox}>{error}</div>}
+        <div style={S.fg}>
+          <label style={S.lbl}>👤 用户名（仅限英文/数字）</label>
+          <input style={S.inp} placeholder="英文/数字，至少3位" value={username}
+            onChange={e=>setUsername(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} autoCapitalize="none" />
+        </div>
+        {!isLogin && (
+          <div style={S.fg}>
+            <label style={S.lbl}>📝 姓名</label>
+            <input style={S.inp} placeholder="真实姓名（显示用）" value={name} onChange={e=>setName(e.target.value)} />
+          </div>
+        )}
+        <div style={S.fg}>
+          <label style={S.lbl}>🔑 密码</label>
+          <input style={S.inp} type="password" placeholder="至少4位" value={password}
+            onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&submit()} />
+        </div>
+        {!isLogin && (
+          <div style={S.fg}>
+            <label style={S.lbl}>🎫 邀请码</label>
+            <input style={S.inp} placeholder="请输入邀请码" value={inviteCode}
+              onChange={e=>setInviteCode(e.target.value.toUpperCase())} autoCapitalize="characters" />
+          </div>
+        )}
+        {!isLogin && (
+          <div style={S.fg}>
+            <label style={S.lbl}>📅 学习计划</label>
+            <div style={{display:"flex",gap:8}}>
+              {[10,20,30,60].map(d=>(
+                <div key={d} onClick={()=>setPlanDays(d)} style={{flex:1,textAlign:"center",padding:"8px 4px",borderRadius:12,cursor:"pointer",fontWeight:700,fontSize:13,background:planDays===d?"#667eea":"#f0f0f0",color:planDays===d?"#fff":"#444"}}>
+                  {d}天
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        <button style={{...S.authBtn,opacity:busy?0.7:1}} onClick={submit} disabled={busy}>
+          {busy?"处理中…":isLogin?"登  录":"注  册"}
+        </button>
+        <div style={{textAlign:"center",marginTop:16,fontSize:13,color:"#636e72"}}>
+          {isLogin
+            ? <span>没有账号？<span style={S.lnk} onClick={()=>{setMode("register");setError("");}}>立即注册</span></span>
+            : <span>已有账号？<span style={S.lnk} onClick={()=>{setMode("login");setError("");}}>返回登录</span></span>
+          }
+          {!isLogin && <div style={{marginTop:8,fontSize:11,color:"#aaa"}}>💡 没有邀请码？请联系管理员获取</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// ADMIN APP
+// ═══════════════════════════════════════════════════════
+function AdminApp({ user, onLogout }) {
+  const [tab, setTab]           = useState("overview");
+  const [users, setUsers]       = useState({});
+  const [settings, setSettings] = useState({ inviteCodes: ["KET2024"] });
+  const [expanded, setExpanded] = useState(null);
+  const [newCode, setNewCode]   = useState("");
+  const [loading, setLoading]   = useState(true);
+
+  const reload = useCallback(async () => {
+    setLoading(true);
+    const [u, s] = await Promise.all([dbRead("users"), dbRead("settings")]);
+    setUsers(u || {});
+    setSettings(s || { inviteCodes: ["KET2024"] });
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { reload(); }, [reload]);
+
+  const students = Object.entries(users).filter(([,u])=>u.role==="student");
+  const admins   = Object.entries(users).filter(([,u])=>u.role==="admin");
+
+  const totalS  = students.length;
+  const activeS = students.filter(([,u])=>u.active!==false).length;
+  const avgPct  = totalS ? Math.round(students.reduce((s,[,u])=>{
+    const tp=u.progress?.topicProgress||{};
+    return s+Object.values(tp).filter(p=>p.learned).length/GRAMMAR_TOPICS.length*100;
+  },0)/totalS) : 0;
+  const totalXP = students.reduce((s,[,u])=>s+(u.progress?.xp||0),0);
+
+  const doToggle = async (uname) => {
+    const cur = users[uname].active !== false;
+    await dbPatch(`users/${uname}`, { active: !cur });
+    setUsers(prev => ({...prev, [uname]: {...prev[uname], active: !cur}}));
+  };
+  const doReset = async (uname) => {
+    if (!window.confirm(`确定重置 ${users[uname].displayName} 的进度？`)) return;
+    const newProg = makeProgress(users[uname].progress?.planDays || 30);
+    await dbPatch(`users/${uname}`, { progress: newProg });
+    setUsers(prev => ({...prev, [uname]: {...prev[uname], progress: newProg}}));
+  };
+  const doDelete = async (uname) => {
+    if (!window.confirm(`确定删除 ${users[uname].displayName}？不可恢复！`)) return;
+    await dbWrite(`users/${uname}`, null);
+    setUsers(prev => { const n={...prev}; delete n[uname]; return n; });
+    setExpanded(null);
+  };
+  const doChangePlan = async (uname, days) => {
+    const prog = users[uname].progress || makeProgress(days);
+    prog.planDays = days;
+    await dbPatch(`users/${uname}`, { progress: prog });
+    setUsers(prev => ({...prev, [uname]: {...prev[uname], progress: prog}}));
+  };
+  const saveSettings = async (s) => {
+    await dbWrite("settings", s);
+    setSettings({...s});
+  };
+  const addCode = async () => {
+    const code = newCode.trim().toUpperCase();
+    if (!code) return;
+    if ((settings.inviteCodes||[]).map(c=>c.toUpperCase()).includes(code)) { alert("该邀请码已存在"); return; }
+    const s = {...settings, inviteCodes: [...(settings.inviteCodes||[]), code]};
+    await saveSettings(s); setNewCode("");
+  };
+  const removeCode = async (code) => {
+    if ((settings.inviteCodes||[]).length <= 1) { alert("至少保留一个邀请码"); return; }
+    if (!window.confirm(`确定删除邀请码 ${code}？`)) return;
+    const s = {...settings, inviteCodes: (settings.inviteCodes||[]).filter(c=>c!==code)};
+    await saveSettings(s);
+  };
+
+  const TABS = [
+    {key:"overview",label:"总览",icon:"📊"},
+    {key:"students",label:"学生",icon:"👥"},
+    {key:"report",label:"报表",icon:"📈"},
+    {key:"rank",label:"排行榜",icon:"🏆"},
+    {key:"codes",label:"邀请码",icon:"🔑"},
+  ];
+
+  return (
+    <div style={S.app}>
+      <div style={{...S.hdr,background:"linear-gradient(135deg,#2d3436,#636e72)"}}>
+        <div>
+          <div style={S.logo}>⚙️ 管理后台</div>
+          <div style={S.sub}>管理员：{user.displayName}</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button style={{...S.logoutBtn,fontSize:11}} onClick={reload}>🔄 刷新</button>
+          <button style={S.logoutBtn} onClick={onLogout}>退出</button>
+        </div>
+      </div>
+
+      <div style={S.tabBar}>
+        {TABS.map(t=>(
+          <div key={t.key} style={{...S.tabItem,...(tab===t.key?S.tabOn:{})}} onClick={()=>setTab(t.key)}>
+            <span style={{fontSize:14}}>{t.icon}</span>
+            <span style={S.tabLbl}>{t.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {loading ? <Splash text="加载数据…" /> : (
+        <div style={{paddingBottom:24}}>
+
+          {tab==="overview" && (
+            <>
+              <div style={S.secTitle}>📊 平台总览</div>
+              <div style={S.grid2}>
+                {[
+                  {e:"👩‍🎓",label:"注册学生",val:totalS,c:"#667eea"},
+                  {e:"✅",label:"活跃学生",val:activeS,c:"#00b894"},
+                  {e:"📈",label:"平均进度",val:avgPct+"%",c:"#e17055"},
+                  {e:"⭐",label:"累计XP",val:totalXP,c:"#f9ca24"},
+                ].map((s,i)=>(
+                  <div key={i} style={{...S.statCard,borderTop:`4px solid ${s.c}`}}>
+                    <div style={{fontSize:28}}>{s.e}</div>
+                    <div style={{fontSize:22,fontWeight:900,color:s.c}}>{s.val}</div>
+                    <div style={{fontSize:11,color:"#636e72"}}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={S.secTitle}>🏆 进度 Top 5</div>
+              {students
+                .map(([un,u])=>({un,u,pct:Math.round(Object.values(u.progress?.topicProgress||{}).filter(p=>p.learned).length/GRAMMAR_TOPICS.length*100)}))
+                .sort((a,b)=>b.pct-a.pct).slice(0,5)
+                .map(({un,u,pct},i)=>(
+                  <div key={un} style={S.rankRow}>
+                    <div style={{...S.rankNum,background:i===0?"#f9ca24":i===1?"#c0c0c0":i===2?"#cd7f32":"#f0f0f0"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:700,fontSize:13}}>{u.displayName}</div>
+                      <div style={S.miniBar}><div style={{...S.miniFill,width:`${pct}%`}}/></div>
+                    </div>
+                    <span style={{fontSize:13,fontWeight:700,color:"#667eea"}}>{pct}%</span>
+                  </div>
+                ))}
+              <div style={S.secTitle}>📚 各考点班级掌握率</div>
+              {GRAMMAR_TOPICS.map(t=>{
+                const n=students.filter(([,u])=>u.progress?.topicProgress?.[t.id]?.learned).length;
+                const pct=totalS?Math.round(n/totalS*100):0;
+                return(
+                  <div key={t.id} style={S.pRow}>
+                    <span style={{fontSize:13}}>{t.emoji}</span>
+                    <div style={S.pInfo}>
+                      <div style={{fontSize:10,fontWeight:600,marginBottom:3}}>{t.title}</div>
+                      <div style={S.pBar}><div style={{...S.pFill,width:`${pct}%`,background:t.color}}/></div>
+                    </div>
+                    <span style={{fontSize:11,fontWeight:700,minWidth:36,textAlign:"right",color:pct>60?"#00b894":pct>30?"#f9ca24":"#e17055"}}>{pct}%</span>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {tab==="students" && (
+            <>
+              <div style={S.secTitle}>👥 学生列表（{students.length}人）</div>
+              {students.length===0 && <div style={S.empty}><div style={{fontSize:36}}>👤</div><div>暂无学生注册</div></div>}
+              {students.map(([un,u])=>{
+                const tp=u.progress?.topicProgress||{};
+                const learned=Object.values(tp).filter(p=>p.learned).length;
+                const pct=Math.round(learned/GRAMMAR_TOPICS.length*100);
+                const open=expanded===un;
+                return(
+                  <div key={un} style={{...S.sCard,opacity:u.active===false?0.55:1}}>
+                    <div style={S.sHead} onClick={()=>setExpanded(open?null:un)}>
+                      <div style={S.ava}>{(u.displayName||"?")[0].toUpperCase()}</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:13}}>{u.displayName} <span style={{fontSize:10,color:"#aaa"}}>@{un}</span></div>
+                        <div style={{fontSize:11,color:"#636e72"}}>{pct}% · XP {u.progress?.xp||0} · {u.active===false?"🔴 停用":"🟢 活跃"}</div>
+                        <div style={S.miniBar}><div style={{...S.miniFill,width:`${pct}%`}}/></div>
+                      </div>
+                      <span style={{color:"#aaa",fontSize:12}}>{open?"▲":"▼"}</span>
+                    </div>
+                    {open && (
+                      <div style={{padding:"12px 16px",borderTop:"1px solid #f5f5f5"}}>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12,fontSize:12}}>
+                          <div style={S.dItem}><span style={{color:"#636e72"}}>注册时间</span><br/>{new Date(u.createdAt).toLocaleDateString("zh")}</div>
+                          <div style={S.dItem}><span style={{color:"#636e72"}}>最近登录</span><br/>{u.lastLogin?new Date(u.lastLogin).toLocaleDateString("zh"):"—"}</div>
+                          <div style={S.dItem}><span style={{color:"#636e72"}}>学习计划</span><br/>{u.progress?.planDays||"—"}天</div>
+                          <div style={S.dItem}><span style={{color:"#636e72"}}>已学考点</span><br/>{learned}/{GRAMMAR_TOPICS.length}</div>
+                        </div>
+                        <div style={{marginBottom:10}}>
+                          <div style={{fontSize:11,color:"#636e72",marginBottom:6}}>修改学习计划：</div>
+                          <div style={{display:"flex",gap:6}}>
+                            {[10,20,30,60].map(d=>(
+                              <div key={d} onClick={()=>doChangePlan(un,d)} style={{flex:1,textAlign:"center",padding:"5px",borderRadius:8,cursor:"pointer",fontSize:12,fontWeight:700,background:u.progress?.planDays===d?"#667eea":"#f0f0f0",color:u.progress?.planDays===d?"#fff":"#444"}}>
+                                {d}天
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <button style={S.actBtn} onClick={()=>doToggle(un)}>{u.active===false?"🟢 启用":"🔴 停用"}</button>
+                          <button style={{...S.actBtn,background:"#fff3cd"}} onClick={()=>doReset(un)}>🔄 重置进度</button>
+                          <button style={{...S.actBtn,background:"#f8d7da"}} onClick={()=>doDelete(un)}>🗑 删除</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div style={S.secTitle}>🛡 管理员</div>
+              {admins.map(([un,u])=>(
+                <div key={un} style={{...S.sCard,borderLeft:"4px solid #667eea"}}>
+                  <div style={S.sHead}>
+                    <div style={{...S.ava,background:"#667eea"}}>{(u.displayName||"A")[0].toUpperCase()}</div>
+                    <div><div style={{fontWeight:700,fontSize:13}}>{u.displayName} <span style={{fontSize:10,color:"#667eea"}}>管理员</span></div><div style={{fontSize:11,color:"#aaa"}}>@{un}</div></div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {tab==="report" && (
+            <>
+              <div style={S.secTitle}>📈 详细学习报表</div>
+              {students.length===0 && <div style={S.empty}><div style={{fontSize:36}}>📊</div><div>暂无学生数据</div></div>}
+              {students.map(([un,u])=>{
+                const tp=u.progress?.topicProgress||{};
+                const learned=Object.values(tp).filter(p=>p.learned);
+                const avgScore=learned.length?Math.round(learned.reduce((s,p)=>s+(p.quizScore||0),0)/learned.length*10)/10:0;
+                const days=u.progress?.startDate?Math.floor((new Date()-new Date(u.progress.startDate))/86400000)+1:0;
+                const pct=Math.round(learned.length/GRAMMAR_TOPICS.length*100);
+                return(
+                  <div key={un} style={S.repCard}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
+                      <div>
+                        <div style={{fontWeight:800,fontSize:15}}>{u.displayName}</div>
+                        <div style={{fontSize:11,color:"#636e72"}}>@{un} · 第{days}天 · 计划{u.progress?.planDays||"?"}天</div>
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:20,fontWeight:900,color:"#667eea"}}>{pct}%</div>
+                        <div style={{fontSize:10,color:"#636e72"}}>完成度</div>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+                      {[{label:"已学考点",val:`${learned.length}/${GRAMMAR_TOPICS.length}`},{label:"平均得分",val:`${avgScore}/10`},{label:"积分",val:u.progress?.xp||0}].map((x,i)=>(
+                        <div key={i} style={{background:"#f8f9fa",borderRadius:8,padding:"8px",textAlign:"center"}}>
+                          <div style={{fontSize:14,fontWeight:700}}>{x.val}</div>
+                          <div style={{fontSize:10,color:"#636e72"}}>{x.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{fontSize:11,fontWeight:600,marginBottom:6}}>各考点（✓=已掌握）：</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+                      {GRAMMAR_TOPICS.map(t=>{const p=tp[t.id];return(
+                        <div key={t.id} title={t.title} style={{padding:"3px 7px",borderRadius:7,fontSize:10,fontWeight:600,background:p?.learned?t.color+"33":"#f0f0f0",border:`1px solid ${p?.learned?t.color+"66":"#e0e0e0"}`}}>
+                          {t.emoji}{p?.learned?` ${p.quizScore}✓`:"—"}
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {tab==="rank" && (
+            <>
+              {[
+                {label:"🏆 完成度排行",fn:([,u])=>Math.round(Object.values(u.progress?.topicProgress||{}).filter(p=>p.learned).length/GRAMMAR_TOPICS.length*100),unit:"%"},
+                {label:"⭐ 积分排行",fn:([,u])=>u.progress?.xp||0,unit:" XP"},
+                {label:"📝 平均得分",fn:([,u])=>{const a=Object.values(u.progress?.topicProgress||{}).filter(p=>p.learned);return a.length?Math.round(a.reduce((s,p)=>s+(p.quizScore||0),0)/a.length*10)/10:0;},unit:"/10"},
+              ].map(({label,fn,unit})=>(
+                <div key={label}>
+                  <div style={S.secTitle}>{label}</div>
+                  {[...students].sort((a,b)=>fn(b)-fn(a)).map((entry,i)=>{
+                    const [un,u]=entry;
+                    return(
+                      <div key={un} style={S.rankRow}>
+                        <div style={{...S.rankNum,background:i===0?"#f9ca24":i===1?"#c0c0c0":i===2?"#cd7f32":"#f0f0f0"}}>{i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</div>
+                        <div style={{flex:1,fontWeight:600,fontSize:13}}>{u.displayName}</div>
+                        <div style={{fontSize:14,fontWeight:800,color:"#667eea"}}>{fn(entry)}{unit}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </>
+          )}
+
+          {tab==="codes" && (
+            <>
+              <div style={S.secTitle}>🔑 邀请码管理</div>
+              <div style={{padding:"0 16px 16px"}}>
+                <div style={{background:"#fff",borderRadius:14,padding:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",marginBottom:16,fontSize:12,color:"#636e72",lineHeight:1.9}}>
+                  • 学生注册时必须填写正确邀请码<br/>
+                  • 邀请码不区分大小写<br/>
+                  • 删除邀请码后已注册学生不受影响<br/>
+                  • 建议定期更换，防止外传
+                </div>
+                <div style={{fontSize:13,fontWeight:700,color:"#2d3436",marginBottom:10}}>当前有效邀请码（{(settings.inviteCodes||[]).length}个）</div>
+                {(settings.inviteCodes||[]).map(code=>(
+                  <div key={code} style={{display:"flex",alignItems:"center",gap:10,background:"#fff",borderRadius:12,padding:"12px 16px",marginBottom:8,boxShadow:"0 2px 6px rgba(0,0,0,0.05)",border:"2px solid #667eea22"}}>
+                    <span style={{fontSize:18}}>🔑</span>
+                    <span style={{flex:1,fontFamily:"'Courier New',monospace",fontSize:16,fontWeight:700,color:"#667eea",letterSpacing:2}}>{code}</span>
+                    <button style={{...S.actBtn,background:"#f8d7da",color:"#721c24"}} onClick={()=>removeCode(code)}>删除</button>
+                  </div>
+                ))}
+                <div style={{marginTop:16,fontSize:13,fontWeight:700,marginBottom:8}}>➕ 添加新邀请码</div>
+                <div style={{display:"flex",gap:8}}>
+                  <input style={{...S.inp,flex:1,fontFamily:"'Courier New',monospace",letterSpacing:1}} placeholder="如 SPRING2025"
+                    value={newCode} onChange={e=>setNewCode(e.target.value.toUpperCase())} onKeyDown={e=>e.key==="Enter"&&addCode()} />
+                  <button style={{padding:"12px 20px",background:"#667eea",color:"#fff",border:"none",borderRadius:12,fontWeight:700,cursor:"pointer",fontSize:13}} onClick={addCode}>添加</button>
+                </div>
+                <div style={{marginTop:8,fontSize:11,color:"#aaa"}}>建议英文+数字组合，例如：KET2025、CLASS01</div>
+              </div>
+            </>
+          )}
+
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// STUDENT APP
+// ═══════════════════════════════════════════════════════
+function StudentApp({ user, onLogout }) {
+  const [tab, setTab]       = useState("today");
+  const [screen, setScreen] = useState("dash");
+  const [selTopic, setSel]  = useState(null);
+  const [quiz, setQuiz]     = useState(null);
+  const [prog, setProg]     = useState(null);
+  const today = new Date().toISOString().split("T")[0];
+
+  useEffect(()=>{
+    (async()=>{
+      const u = await dbRead(`users/${user.username}`);
+      if (u) setProg(u.progress || makeProgress(30));
+    })();
+  },[user.username]);
+
+  const save = useCallback(async (newProg) => {
+    setProg(newProg);
+    await dbPatch(`users/${user.username}`, { progress: newProg, lastActive: today });
+  },[user.username, today]);
+
+  if (!prog) return <Splash text="加载学习进度…" />;
+
+  const dayNum = Math.floor((new Date(today)-new Date(prog.startDate))/86400000)+1;
+  const totalLearned = Object.values(prog.topicProgress).filter(p=>p.learned).length;
+  const pct = Math.round(totalLearned/GRAMMAR_TOPICS.length*100);
+  const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[t.id]?.learned);
+  const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[t.id];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
+
+  const openTopic = (t) => { setSel(t); setScreen("study"); };
+
+  if (screen==="study"&&selTopic) return(
+    <StudyScreen topic={selTopic} userName={user.displayName}
+      onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});setScreen("quiz");}}
+      onBack={()=>setScreen("dash")} />
+  );
+  if (screen==="quiz"&&quiz) return(
+    <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
+      quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
+      onFinish={(score)=>{
+        const nd=JSON.parse(JSON.stringify(prog));
+        const p=nd.topicProgress[quiz.topicId];
+        const passed=score>=6;
+        p.learned=true;p.quizScore=score;p.reviewCount=(p.reviewCount||0)+1;p.lastReview=today;
+        const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
+        p.intervalIdx=ni;
+        const nx=new Date();nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
+        p.nextReview=nx.toISOString().split("T")[0];
+        nd.xp=(nd.xp||0)+score*10;
+        save(nd); setScreen("dash");
+      }}
+    />
+  );
+
+  const TABS=[{key:"today",label:"今日",icon:"📅"},{key:"library",label:"知识库",icon:"📚"},{key:"review",label:"复习",icon:"🔁"},{key:"progress",label:"进度",icon:"📊"}];
+
+  return(
+    <div style={S.app}>
+      <div style={S.hdr}>
+        <div>
+          <div style={S.logo}>🎓 KET语法通关</div>
+          <div style={S.sub}>你好 {user.displayName} · 第{dayNum}天</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <span style={S.xpBadge}>⭐{prog.xp}</span>
+          <button style={S.logoutBtn} onClick={onLogout}>退出</button>
+        </div>
+      </div>
+      <div style={S.progBar}><div style={{...S.progFill,width:`${pct}%`}}/></div>
+      <div style={{fontSize:11,color:"#636e72",textAlign:"center",padding:"4px 0",background:"#fff"}}>{pct}% · {totalLearned}/{GRAMMAR_TOPICS.length} 个考点</div>
+      <div style={S.tabBar}>
+        {TABS.map(t=>(
+          <div key={t.key} style={{...S.tabItem,...(tab===t.key?S.tabOn:{})}} onClick={()=>setTab(t.key)}>
+            <span style={{fontSize:16}}>{t.icon}</span>
+            <span style={S.tabLbl}>{t.label}</span>
+            {t.key==="review"&&reviewTopics.length>0&&<span style={S.badge}>{reviewTopics.length}</span>}
+          </div>
+        ))}
+      </div>
+
+      {tab==="today"&&(
+        <div style={{paddingBottom:20}}>
+          {reviewTopics.length>0&&<div style={S.rvBanner}><span>🔁 {reviewTopics.length}个待复习</span><button style={S.rvBtn} onClick={()=>setTab("review")}>去复习</button></div>}
+          <div style={S.secTitle}>📅 今日任务（第{dayNum}天）</div>
+          {todayTopics.length===0
+            ?<div style={S.empty}><div style={{fontSize:44}}>🎉</div><div style={{fontWeight:700,fontSize:16}}>今日完成！</div><button style={{...S.rvBtn,marginTop:16,padding:"10px 24px"}} onClick={()=>setTab("library")}>去知识库</button></div>
+            :<div style={S.tGrid}>{todayTopics.map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[t.id]} onClick={()=>openTopic(t)}/>)}</div>
+          }
+          {GRAMMAR_TOPICS.filter(t=>prog.topicProgress[t.id]?.lastReview===today&&prog.topicProgress[t.id]?.learned).length>0&&(
+            <>
+              <div style={S.secTitle}>✅ 今日已完成</div>
+              <div style={S.tGrid}>{GRAMMAR_TOPICS.filter(t=>prog.topicProgress[t.id]?.lastReview===today&&prog.topicProgress[t.id]?.learned).map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[t.id]} learned onClick={()=>openTopic(t)}/>)}</div>
+            </>
+          )}
+        </div>
+      )}
+
+      {tab==="library"&&(
+        <div style={{paddingBottom:20}}>
+          <div style={S.secTitle}>📚 全部知识库 · {GRAMMAR_TOPICS.length}个考点</div>
+          {Object.entries(CATEGORY_MAP).map(([cat,ids])=>(
+            <div key={cat}>
+              <div style={S.catTitle}>{cat}</div>
+              <div style={S.tGrid}>{ids.map(id=>{const topic=GRAMMAR_TOPICS.find(t=>t.id===id);if(!topic)return null;const p=prog.topicProgress[topic.id];const due=p?.learned&&p?.nextReview&&p.nextReview<=today;return<TCard key={topic.id} topic={topic} progress={p} learned={p?.learned} isDue={due} onClick={()=>openTopic(topic)}/>;})}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab==="review"&&(
+        <div style={{paddingBottom:20}}>
+          <div style={S.secTitle}>🔁 艾宾浩斯复习队列</div>
+          <div style={{padding:"0 16px 12px"}}>
+            <div style={{background:"#fff",borderRadius:12,padding:14,border:"2px solid #667eea22"}}>
+              <div style={{fontWeight:700,marginBottom:4,fontSize:12,color:"#667eea"}}>📌 复习间隔：1天→3天→7天→14天→30天</div>
+              <div style={{fontSize:12,color:"#636e72"}}>答对6题以上才算掌握，自动安排下次复习</div>
+            </div>
+          </div>
+          {reviewTopics.length>0
+            ?<div style={S.tGrid}>{reviewTopics.map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[t.id]} learned isDue onClick={()=>openTopic(t)}/>)}</div>
+            :<div style={S.empty}><div style={{fontSize:40}}>✨</div><div style={{fontWeight:700}}>今日无需复习</div></div>
+          }
+          {(()=>{
+            const up=GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[t.id];return p?.learned&&p?.nextReview&&p.nextReview>today;}).sort((a,b)=>prog.topicProgress[a.id].nextReview.localeCompare(prog.topicProgress[b.id].nextReview));
+            if(!up.length)return null;
+            return(<><div style={S.secTitle}>📅 即将复习</div>{up.slice(0,8).map(t=>{const p=prog.topicProgress[t.id];const days=Math.ceil((new Date(p.nextReview)-new Date(today))/86400000);return(<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 20px",background:"#fff",borderBottom:"1px solid #f5f5f5"}}><span style={{fontSize:18}}>{t.emoji}</span><span style={{flex:1,fontSize:12}}>{t.title}</span><span style={{fontSize:11,color:"#636e72",background:"#f0f0f0",padding:"2px 8px",borderRadius:20}}>{days}天后</span></div>);})}</>);
+          })()}
+        </div>
+      )}
+
+      {tab==="progress"&&(
+        <div style={{paddingBottom:20}}>
+          <div style={S.secTitle}>📊 我的进度</div>
+          <div style={S.grid2}>
+            {[{e:"📚",label:"已学考点",val:`${totalLearned}/${GRAMMAR_TOPICS.length}`},{e:"⭐",label:"累计积分",val:`${prog.xp} XP`},{e:"📅",label:"学习天数",val:`${dayNum}天`},{e:"🎯",label:"学习计划",val:`${prog.planDays}天`}].map((s,i)=>(
+              <div key={i} style={S.statCard}><div style={{fontSize:26}}>{s.e}</div><div style={{fontSize:18,fontWeight:900,color:"#2d3436"}}>{s.val}</div><div style={{fontSize:11,color:"#636e72"}}>{s.label}</div></div>
+            ))}
+          </div>
+          <div style={S.secTitle}>各考点掌握情况</div>
+          {GRAMMAR_TOPICS.map(t=>{const p=prog.topicProgress[t.id];const pct2=p?.learned?Math.min(100,((p.intervalIdx||0)/SR_INTERVALS.length)*100):0;return(
+            <div key={t.id} style={S.pRow}><span style={{fontSize:13}}>{t.emoji}</span><div style={S.pInfo}><div style={{fontSize:10,fontWeight:600,marginBottom:3}}>{t.title}</div><div style={S.pBar}><div style={{...S.pFill,width:`${pct2}%`,background:t.color}}/></div></div><span style={{fontSize:11,color:p?.learned?"#00b894":"#b2bec3",minWidth:38,textAlign:"right"}}>{p?.learned?`${p.quizScore}/10`:"未学"}</span></div>
+          );})}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Shared Components ──────────────────────────────────
+function TCard({topic,progress,learned,isDue,onClick}){
+  return(
+    <div style={{...S.tCard,borderLeft:`5px solid ${topic.color}`}} onClick={onClick}>
+      <div style={{display:"flex",alignItems:"center",gap:9}}>
+        <span style={{fontSize:22}}>{topic.emoji}</span>
+        <div style={{flex:1}}>
+          <div style={{fontSize:13,fontWeight:700,color:"#2d3436"}}>{topic.title}</div>
+          <div style={{fontSize:11,color:"#636e72"}}>
+            {learned?`✅ 已掌握 · ${progress?.quizScore}/10分`:"🆕 待学习"}
+            {isDue&&<span style={{background:"#ffc107",color:"#856404",padding:"1px 6px",borderRadius:10,fontSize:10,fontWeight:700,marginLeft:4}}>🔁复习</span>}
+          </div>
+        </div>
+      </div>
+      {learned&&<div style={{fontSize:12,letterSpacing:3,marginTop:3}}>{[0,1,2,3,4].map(i=><span key={i} style={{color:i<(progress?.intervalIdx||0)?topic.color:"#ddd"}}>●</span>)}</div>}
+    </div>
+  );
+}
+
+function StudyScreen({topic,onStartQuiz,onBack,userName}){
+  const [ri,setRi]=useState(0);
+  const rule=topic.rules[ri];
+  return(
+    <div style={S.sPage}>
+      <div style={S.sHdr}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <button style={S.backBtn} onClick={onBack}>← 返回</button>
+          <span style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{userName}</span>
+        </div>
+        <h2 style={{color:"#fff",fontSize:14,fontWeight:900,margin:"8px 0 0"}}>{topic.emoji} {topic.title}</h2>
+      </div>
+      <div style={{display:"flex",gap:6,padding:"12px 20px 4px",justifyContent:"center",flexWrap:"wrap"}}>
+        {topic.rules.map((_,i)=><div key={i} style={{width:10,height:10,borderRadius:"50%",cursor:"pointer",background:i===ri?topic.color:"#ddd"}} onClick={()=>setRi(i)}/>)}
+      </div>
+      <div style={{background:"#fff",margin:"8px 16px",borderRadius:14,padding:16,border:`2px solid ${topic.color}`,boxShadow:"0 4px 12px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:11,fontWeight:700,color:topic.color,marginBottom:4}}>📌 规则 {ri+1}/{topic.rules.length}</div>
+        <div style={{fontSize:15,fontWeight:900,color:"#2d3436",marginBottom:12,lineHeight:1.6}}>{rule.rule}</div>
+        <div style={{fontSize:11,fontWeight:700,color:"#636e72",marginBottom:5}}>💡 例子：</div>
+        {rule.examples.map((ex,i)=><div key={i} style={{fontSize:12,color:"#2d3436",padding:"3px 0",borderBottom:"1px dashed #f0f0f0",fontFamily:"'Courier New',monospace"}}>• {ex}</div>)}
+      </div>
+      <div style={{display:"flex",padding:"12px 16px",gap:10}}>
+        <button style={{flex:1,padding:"12px",borderRadius:12,border:"2px solid #e0e0e0",background:"#fff",cursor:"pointer",fontWeight:700,fontSize:13,opacity:ri===0?0.3:1}} onClick={()=>setRi(Math.max(0,ri-1))}>← 上一条</button>
+        {ri<topic.rules.length-1
+          ?<button style={{flex:1,padding:"12px",borderRadius:12,border:"none",background:topic.color,color:"#fff",cursor:"pointer",fontWeight:700,fontSize:13}} onClick={()=>setRi(ri+1)}>下一条 →</button>
+          :<button style={{...S.primBtn,margin:0,flex:1}} onClick={onStartQuiz}>开始练习（10题）✏️</button>
+        }
+      </div>
+    </div>
+  );
+}
+
+function QuizScreen({topic,quiz,setQuiz,onFinish,onBack}){
+  const [sel,setSel]=useState(null);
+  const [fb,setFb]=useState(false);
+  const q=topic.quiz[quiz.qIdx];
+  const ok=sel===q.answer;
+  const lc=q.level===1?"#00b894":q.level===2?"#FFC300":"#FF6B6B";
+  const ll=q.level===1?"⭐基础":q.level===2?"⭐⭐中等":"⭐⭐⭐难";
+  const pick=(i)=>{if(fb)return;setSel(i);setFb(true);};
+  const next=()=>{const ns=quiz.score+(ok?1:0);if(quiz.qIdx+1>=topic.quiz.length){onFinish(ns);}else{setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns});setSel(null);setFb(false);}};
+  return(
+    <div style={S.sPage}>
+      <div style={S.sHdr}>
+        <button style={S.backBtn} onClick={onBack}>← 返回</button>
+        <h2 style={{color:"#fff",fontSize:14,fontWeight:900,margin:"8px 0 0"}}>{topic.emoji} 练习题</h2>
+      </div>
+      <div style={{padding:"12px 20px",fontSize:13,color:"#636e72"}}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+          <span>第{quiz.qIdx+1}/{topic.quiz.length}题 · 得分：{quiz.score}</span>
+          <span style={{color:"#fff",fontSize:11,fontWeight:700,padding:"3px 10px",borderRadius:12,background:lc}}>{ll}</span>
+        </div>
+        <div style={{height:4,background:"#e0e0e0",borderRadius:4}}><div style={{height:"100%",borderRadius:4,background:topic.color,width:`${(quiz.qIdx/topic.quiz.length)*100}%`}}/></div>
+      </div>
+      <div style={{background:"#fff",margin:"8px 16px",borderRadius:14,padding:16,border:`2px solid ${topic.color}`,boxShadow:"0 4px 12px rgba(0,0,0,0.06)"}}>
+        <div style={{fontSize:15,fontWeight:800,color:"#2d3436",marginBottom:14,lineHeight:1.5}}>{q.q}</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {q.options.map((opt,i)=>{
+            let bg="#f8f9fa",border="2px solid #e0e0e0";
+            if(fb){if(i===q.answer){bg="#d4edda";border="2px solid #28a745";}else if(i===sel&&sel!==q.answer){bg="#f8d7da";border="2px solid #dc3545";}}
+            else if(sel===i){bg="#e3f2fd";border=`2px solid ${topic.color}`;}
+            return(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:10,cursor:"pointer",fontSize:13,background:bg,border}} onClick={()=>pick(i)}>
+                <span style={{width:26,height:26,borderRadius:"50%",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:12,flexShrink:0,background:topic.color}}>{["A","B","C","D"][i]}</span>
+                <span style={{flex:1}}>{opt}</span>
+                {fb&&i===q.answer&&<span style={{color:"#28a745",fontWeight:900}}>✓</span>}
+                {fb&&i===sel&&sel!==q.answer&&<span style={{color:"#dc3545",fontWeight:900}}>✗</span>}
+              </div>
+            );
+          })}
+        </div>
+        {fb&&<div style={{marginTop:12,padding:11,borderRadius:10,fontSize:13,fontWeight:700,textAlign:"center",background:ok?"#d4edda":"#fff3cd"}}>{ok?"🎉 正确！太棒了！":"💡 正确答案："+q.options[q.answer]}</div>}
+      </div>
+      {fb&&<button style={{...S.primBtn,background:topic.color,margin:"16px 16px 0"}} onClick={next}>{quiz.qIdx+1>=topic.quiz.length?"查看结果 🎊":"下一题 →"}</button>}
+    </div>
+  );
+}
+
+// ── Styles ─────────────────────────────────────────────
+const S = {
+  app:      {maxWidth:480,margin:"0 auto",background:"#f8f9fa",minHeight:"100vh"},
+  splash:   {display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh",background:"linear-gradient(135deg,#667eea,#764ba2)"},
+  hdr:      {background:"linear-gradient(135deg,#667eea,#764ba2)",padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"},
+  logo:     {fontSize:17,fontWeight:900,color:"#fff",letterSpacing:1},
+  sub:      {fontSize:11,color:"rgba(255,255,255,0.85)",background:"rgba(255,255,255,0.15)",padding:"2px 10px",borderRadius:20,marginTop:3,display:"inline-block"},
+  xpBadge:  {fontSize:12,fontWeight:700,color:"#fff",background:"rgba(255,255,255,0.2)",padding:"4px 10px",borderRadius:20},
+  logoutBtn:{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",padding:"5px 12px",borderRadius:20,cursor:"pointer",fontSize:12},
+  progBar:  {height:5,background:"#e0e0e0"},
+  progFill: {height:"100%",background:"linear-gradient(90deg,#667eea,#764ba2)",transition:"width 0.5s"},
+  tabBar:   {display:"flex",background:"#fff",borderBottom:"2px solid #f0f0f0",position:"sticky",top:0,zIndex:10},
+  tabItem:  {flex:1,display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 4px 6px",cursor:"pointer",position:"relative",color:"#aaa"},
+  tabOn:    {color:"#667eea",borderBottom:"3px solid #667eea"},
+  tabLbl:   {fontSize:10,fontWeight:700,marginTop:2},
+  badge:    {position:"absolute",top:4,right:"14%",background:"#FF6B6B",color:"#fff",fontSize:9,fontWeight:900,padding:"1px 5px",borderRadius:10},
+  secTitle: {fontSize:14,fontWeight:800,color:"#2d3436",padding:"14px 20px 8px"},
+  catTitle: {fontSize:12,fontWeight:800,color:"#667eea",background:"linear-gradient(90deg,#eef0ff,transparent)",padding:"6px 20px",marginTop:8},
+  tGrid:    {padding:"0 16px",display:"flex",flexDirection:"column",gap:7},
+  tCard:    {background:"#fff",borderRadius:11,padding:"12px",boxShadow:"0 2px 6px rgba(0,0,0,0.05)",cursor:"pointer",display:"flex",flexDirection:"column",gap:4},
+  empty:    {textAlign:"center",padding:"40px 20px",color:"#636e72"},
+  rvBanner: {display:"flex",justifyContent:"space-between",alignItems:"center",background:"#fff3cd",border:"1px solid #ffc107",padding:"10px 16px",margin:"12px 16px",borderRadius:10,fontSize:13},
+  rvBtn:    {background:"#ffc107",border:"none",borderRadius:8,padding:"6px 14px",fontWeight:700,cursor:"pointer",fontSize:13},
+  grid2:    {display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"0 16px"},
+  statCard: {background:"#fff",borderRadius:12,padding:14,textAlign:"center",boxShadow:"0 2px 6px rgba(0,0,0,0.05)"},
+  pRow:     {display:"flex",alignItems:"center",gap:10,padding:"8px 16px",background:"#fff",borderBottom:"1px solid #f0f0f0"},
+  pInfo:    {flex:1},
+  pBar:     {height:5,background:"#f0f0f0",borderRadius:5},
+  pFill:    {height:"100%",borderRadius:5},
+  sPage:    {maxWidth:480,margin:"0 auto",background:"#f8f9fa",minHeight:"100vh"},
+  sHdr:     {background:"linear-gradient(135deg,#667eea,#764ba2)",padding:"14px 20px"},
+  backBtn:  {background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",padding:"5px 12px",borderRadius:20,cursor:"pointer",fontSize:12,fontWeight:700},
+  primBtn:  {width:"100%",padding:"13px",background:"linear-gradient(135deg,#667eea,#764ba2)",color:"#fff",border:"none",borderRadius:14,fontSize:15,fontWeight:900,cursor:"pointer"},
+  authBg:   {maxWidth:480,margin:"0 auto",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#667eea,#764ba2)",padding:20},
+  authCard: {background:"#fff",borderRadius:24,padding:"32px 24px",width:"100%",maxWidth:400,boxShadow:"0 20px 60px rgba(0,0,0,0.2)"},
+  errBox:   {background:"#f8d7da",border:"1px solid #f5c6cb",color:"#721c24",borderRadius:10,padding:"10px 14px",fontSize:13,marginBottom:16},
+  fg:       {marginBottom:16},
+  lbl:      {display:"block",fontSize:12,fontWeight:700,color:"#2d3436",marginBottom:6},
+  inp:      {width:"100%",padding:"12px 14px",border:"2px solid #e0e0e0",borderRadius:12,fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"inherit"},
+  authBtn:  {width:"100%",padding:"14px",background:"linear-gradient(135deg,#667eea,#764ba2)",color:"#fff",border:"none",borderRadius:14,fontSize:16,fontWeight:900,cursor:"pointer",marginTop:8},
+  lnk:      {color:"#667eea",cursor:"pointer",fontWeight:700},
+  rankRow:  {display:"flex",alignItems:"center",gap:12,padding:"10px 20px",background:"#fff",borderBottom:"1px solid #f5f5f5"},
+  rankNum:  {width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:13,flexShrink:0},
+  sCard:    {background:"#fff",margin:"0 16px 10px",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.06)",borderLeft:"4px solid #e0e0e0"},
+  sHead:    {display:"flex",alignItems:"center",gap:12,padding:"14px 16px",cursor:"pointer"},
+  ava:      {width:40,height:40,borderRadius:"50%",background:"#667eea",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:900,fontSize:18,flexShrink:0},
+  miniBar:  {height:4,background:"#f0f0f0",borderRadius:4,marginTop:5},
+  miniFill: {height:"100%",borderRadius:4,background:"linear-gradient(90deg,#667eea,#764ba2)"},
+  dItem:    {background:"#f8f9fa",borderRadius:8,padding:"8px 10px",fontSize:12},
+  actBtn:   {padding:"7px 14px",borderRadius:10,border:"1px solid #e0e0e0",background:"#f8f9fa",cursor:"pointer",fontSize:12,fontWeight:700},
+  repCard:  {background:"#fff",margin:"0 16px 12px",borderRadius:14,padding:16,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"},
+};
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
