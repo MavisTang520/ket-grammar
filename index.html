@@ -74,7 +74,7 @@ const GRAMMAR_TOPICS = [
       { rule: "some/any；How many/How much", examples: ["I need some milk.", "Do you have any apples?", "How many books? / How much milk?"] },
     ],
     quiz: [
-      { q: "\"watch\" 的复数是？", options: ["watchs","watches","watchies","watchs"], answer: 1, level: 1 },
+      { q: "\"watch\" 的复数是？", options: ["watchs","watches","watchies","watche"], answer: 1, level: 1 },
       { q: "\"child\" 的复数是？", options: ["childs","childes","children","childrens"], answer: 2, level: 1 },
       { q: "\"leaf\" 的复数是？", options: ["leafs","leaves","leafes","leaf"], answer: 1, level: 1 },
       { q: "\"sheep\" 的复数是？", options: ["sheeps","sheepes","sheepies","sheep"], answer: 3, level: 1 },
@@ -1277,12 +1277,25 @@ function QuizScreen({topic,quiz,setQuiz,onFinish,onBack,onGoHome}){
   const [fb,setFb]=useState(false);
   const [finished,setFinished]=useState(false);
   const [finalScore,setFinalScore]=useState(0);
+  const [wrongAnswers,setWrongAnswers]=useState([]);
   const q=finished?null:topic.quiz[quiz.qIdx];
   const ok=sel===q?.answer;
   const lc=q?.level===1?"#00b894":q?.level===2?"#FFC300":"#FF6B6B";
   const ll=q?.level===1?"⭐基础":q?.level===2?"⭐⭐中等":"⭐⭐⭐难";
   const pick=(i)=>{if(fb)return;setSel(i);setFb(true);};
-  const next=()=>{const ns=quiz.score+(ok?1:0);if(quiz.qIdx+1>=topic.quiz.length){setFinalScore(ns);setFinished(true);}else{setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns});setSel(null);setFb(false);}};
+  const next=()=>{
+    const ns=quiz.score+(ok?1:0);
+    const newWrong = !ok && sel!==null ? [...wrongAnswers, {idx:quiz.qIdx, q:q.q, options:q.options, answer:q.answer, selected:sel}] : wrongAnswers;
+    if(quiz.qIdx+1>=topic.quiz.length){
+      setWrongAnswers(newWrong);
+      setFinalScore(ns);
+      setFinished(true);
+    }else{
+      setWrongAnswers(newWrong);
+      setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns});
+      setSel(null);setFb(false);
+    }
+  };
   if(finished){
     const passed=finalScore>=6;
     return(
@@ -1310,6 +1323,31 @@ function QuizScreen({topic,quiz,setQuiz,onFinish,onBack,onGoHome}){
             {passed?"🎊 返回首页":"🔄 返回再学一遍"}
           </button>
         </div>
+
+        {wrongAnswers.length>0&&(
+          <div style={{padding:"0 16px 24px"}}>
+            <div style={{fontSize:14,fontWeight:800,color:"#2d3436",marginBottom:12,paddingTop:8,borderTop:"2px solid #f0f0f0"}}>
+              📝 错题回顾（{wrongAnswers.length}题）
+            </div>
+            {wrongAnswers.map((w,i)=>(
+              <div key={i} style={{background:"#fff",borderRadius:14,padding:16,marginBottom:10,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",borderLeft:"4px solid #e17055"}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#2d3436",marginBottom:10,lineHeight:1.5}}>
+                  Q{w.idx+1}. {w.q}
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:"#f8d7da",border:"1px solid #f5c6cb"}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#dc3545",minWidth:20}}>✗ {["A","B","C","D"][w.selected]}</span>
+                    <span style={{fontSize:12,color:"#721c24"}}>你的答案：{w.options[w.selected]}</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:"#d4edda",border:"1px solid #c3e6cb"}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#28a745",minWidth:20}}>✓ {["A","B","C","D"][w.answer]}</span>
+                    <span style={{fontSize:12,color:"#155724"}}>正确答案：{w.options[w.answer]}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
