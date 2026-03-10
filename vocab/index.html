@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>单词记忆卡片</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=Space+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e17;
+    --surface: #1a1828;
+    --card: #221f35;
+    --accent: #e8c547;
+    --accent2: #ff6b6b;
+    --accent3: #6bcfff;
+    --text: #fffffe;
+    --text-muted: #a7a9be;
+    --border: rgba(255,255,255,0.08);
+    --green: #4ecdc4;
+    --red: #ff6b6b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Stars background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(232,197,71,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 70%, rgba(107,207,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,107,107,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 30px 0 20px;
+  }
+
+  header h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent3) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-top: 6px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Unit selector */
+  .unit-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 16px 0;
+  }
+
+  .unit-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-family: 'Space Mono', monospace;
+    transition: all 0.2s;
+  }
+
+  .unit-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .unit-tab.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Mode selector */
+  .mode-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 12px auto;
+    width: fit-content;
+    border: 1px solid var(--border);
+  }
+
+  .mode-btn {
+    padding: 8px 18px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .mode-btn.active {
+    background: var(--card);
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .progress-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 6px 0 16px;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stat-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  /* ===== FLASHCARD MODE ===== */
+  #flashcard-mode {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+
+  .card-container {
+    perspective: 1200px;
+    width: 100%;
+    max-width: 520px;
+    height: 300px;
+    cursor: pointer;
+  }
+
+  .card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-inner.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+  }
+
+  .card-front {
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .card-back {
+    background: linear-gradient(135deg, #1e1b3a 0%, #0f1a2e 100%);
+    border: 1px solid rgba(107,207,255,0.2);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    transform: rotateY(180deg);
+  }
+
+  .card-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  .card-word {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  .card-unit {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 12px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .card-def {
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.7;
+    font-weight: 300;
+  }
+
+  .card-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .flip-icon {
+    width: 16px; height: 16px;
+    animation: spin 4s linear infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Action buttons */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 12px 28px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-wrong {
+    background: rgba(255,107,107,0.15);
+    color: var(--red);
+    border: 1px solid rgba(255,107,107,0.3);
+  }
+  .btn-wrong:hover { background: rgba(255,107,107,0.25); transform: translateY(-1px); }
+
+  .btn-right {
+    background: rgba(78,205,196,0.15);
+    color: var(--green);
+    border: 1px solid rgba(78,205,196,0.3);
+  }
+  .btn-right:hover { background: rgba(78,205,196,0.25); transform: translateY(-1px); }
+
+  .btn-next {
+    background: var(--accent);
+    color: var(--bg);
+    font-weight: 700;
+    border: none;
+  }
+  .btn-next:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+
+  /* ===== QUIZ MODE ===== */
+  #quiz-mode {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 0;
+  }
+
+  .quiz-question {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 520px;
+    text-align: center;
+  }
+
+  .quiz-q-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .quiz-q-text {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: var(--text);
+  }
+
+  .quiz-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .quiz-opt {
+    padding: 14px 18px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-family: 'Space Mono', monospace;
+    transition: all 0.2s;
+    text-align: left;
+    line-height: 1.4;
+  }
+
+  .quiz-opt:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(232,197,71,0.08);
+  }
+
+  .quiz-opt.correct {
+    background: rgba(78,205,196,0.15);
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .quiz-opt.wrong {
+    background: rgba(255,107,107,0.15);
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .quiz-feedback {
+    font-size: 0.9rem;
+    min-height: 28px;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  /* ===== REVIEW MODE ===== */
+  #review-mode {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  .review-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    transition: all 0.2s;
+  }
+
+  .review-item:hover { border-color: rgba(232,197,71,0.3); }
+
+  .review-word {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--accent);
+    font-weight: 700;
+    min-width: 140px;
+    line-height: 1.5;
+  }
+
+  .review-def {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .review-known {
+    border-color: rgba(78,205,196,0.2);
+    opacity: 0.6;
+  }
+
+  /* Complete screen */
+  .complete-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .complete-icon {
+    font-size: 4rem;
+    animation: bounce 0.6s ease;
+  }
+
+  @keyframes bounce {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .complete-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, var(--accent), var(--green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .complete-stats {
+    display: flex;
+    gap: 24px;
+    margin: 10px 0;
+  }
+
+  .complete-stat {
+    text-align: center;
+  }
+
+  .complete-stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  .complete-stat-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Shuffle badge */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    background: rgba(232,197,71,0.15);
+    color: var(--accent);
+    border: 1px solid rgba(232,197,71,0.3);
+  }
+
+  /* Hidden */
+  .hidden { display: none !important; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  @media (max-width: 480px) {
+    .card-word { font-size: 1.6rem; }
+    .quiz-options { grid-template-columns: 1fr; }
+    header h1 { font-size: 1.5rem; }
+    .review-item { flex-direction: column; gap: 6px; }
+    .review-word { min-width: unset; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>📚 单词记忆卡</h1>
+    <p id="subtitle">Grade 4 · Units 7–12</p>
+  </header>
+
+  <!-- Unit filter -->
+  <div class="unit-tabs" id="unit-tabs"></div>
+
+  <!-- Mode selector -->
+  <div class="mode-tabs">
+    <button class="mode-btn active" onclick="switchMode('flashcard')">🃏 闪卡</button>
+    <button class="mode-btn" onclick="switchMode('quiz')">🧠 测验</button>
+    <button class="mode-btn" onclick="switchMode('review')">📖 速览</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <span class="progress-text" id="progress-text">0 / 0</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat">
+      <div class="stat-dot" style="background:var(--green)"></div>
+      <span id="stat-known">0 已掌握</span>
+    </div>
+    <div class="stat">
+      <div class="stat-dot" style="background:var(--red)"></div>
+      <span id="stat-unknown">0 待复习</span>
+    </div>
+    <div class="stat">
+      <div class="stat-dot" style="background:var(--accent)"></div>
+      <span id="stat-total">0 总计</span>
+    </div>
+  </div>
+
+  <!-- FLASHCARD MODE -->
+  <div id="flashcard-mode">
+    <div class="card-container" id="card-container" onclick="flipCard()">
+      <div class="card-inner" id="card-inner">
+        <div class="card-face card-front">
+          <div class="card-label">WORD</div>
+          <div class="card-word" id="fc-word">—</div>
+          <div class="card-unit" id="fc-unit"></div>
+          <div class="card-hint">
+            <svg class="flip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6M23 20v-6h-6"/>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+            点击翻转查看释义
+          </div>
+        </div>
+        <div class="card-face card-back">
+          <div class="card-label">DEFINITION</div>
+          <div class="card-def" id="fc-def">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="action-row" id="fc-actions" style="display:none">
+      <button class="btn btn-wrong" onclick="markCard(false)">✗ 没记住</button>
+      <button class="btn btn-right" onclick="markCard(true)">✓ 已掌握</button>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-ghost" onclick="prevCard()">← 上一个</button>
+      <button class="btn btn-next" onclick="nextCard()">下一个 →</button>
+      <button class="btn btn-ghost" onclick="shuffleDeck()">⇄ 乱序</button>
+    </div>
+    <div class="complete-screen hidden" id="fc-complete">
+      <div class="complete-icon">🎉</div>
+      <div class="complete-title">本轮完成！</div>
+      <div class="complete-stats">
+        <div class="complete-stat">
+          <div class="complete-stat-num" style="color:var(--green)" id="cc-known">0</div>
+          <div class="complete-stat-label">已掌握</div>
+        </div>
+        <div class="complete-stat">
+          <div class="complete-stat-num" style="color:var(--red)" id="cc-unknown">0</div>
+          <div class="complete-stat-label">待复习</div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-ghost" onclick="restartDeck()">重新开始</button>
+        <button class="btn btn-next" onclick="reviewUnknown()">只练没记住的</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ MODE -->
+  <div id="quiz-mode" class="hidden">
+    <div class="quiz-question">
+      <div class="quiz-q-label">请选出正确单词</div>
+      <div class="quiz-q-text" id="qz-question">—</div>
+    </div>
+    <div class="quiz-options" id="qz-options"></div>
+    <div class="quiz-feedback" id="qz-feedback"></div>
+    <div class="action-row">
+      <button class="btn btn-next hidden" id="qz-next-btn" onclick="nextQuiz()">下一题 →</button>
+    </div>
+    <div class="complete-screen hidden" id="quiz-complete">
+      <div class="complete-icon">🏆</div>
+      <div class="complete-title">测验完成！</div>
+      <div class="complete-stats">
+        <div class="complete-stat">
+          <div class="complete-stat-num" style="color:var(--green)" id="qc-correct">0</div>
+          <div class="complete-stat-label">答对</div>
+        </div>
+        <div class="complete-stat">
+          <div class="complete-stat-num" style="color:var(--red)" id="qc-wrong">0</div>
+          <div class="complete-stat-label">答错</div>
+        </div>
+        <div class="complete-stat">
+          <div class="complete-stat-num" style="color:var(--accent)" id="qc-pct">0%</div>
+          <div class="complete-stat-label">正确率</div>
+        </div>
+      </div>
+      <div class="action-row">
+        <button class="btn btn-next" onclick="restartQuiz()">再来一次</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVIEW MODE -->
+  <div id="review-mode" class="hidden">
+    <div id="review-list"></div>
+  </div>
+</div>
+
+<script>
+const ALL_WORDS = [
+  // Unit 7 Lesson 1
+  {word:"iguana",def:"a large tropical American lizard",unit:"Unit 7"},
+  {word:"national park",def:"an area of land protected by the government for people to visit because of its natural beauty and historical or scientific interest",unit:"Unit 7"},
+  {word:"jungle",def:"an area of tropical forest where trees and plants grow very thickly",unit:"Unit 7"},
+  {word:"sand",def:"the very tiny, loose pieces of rock that cover beaches, deserts, etc.",unit:"Unit 7"},
+  {word:"volcano",def:"a mountain with a hole in the top or side that sometimes sends out rocks, ash, lava, etc. in a sudden explosion",unit:"Unit 7"},
+  {word:"wildlife",def:"animals living in nature",unit:"Unit 7"},
+  {word:"erupt",def:"to send out rocks, ash, lava, etc. in a sudden explosion",unit:"Unit 7"},
+  {word:"branch",def:"a part of a tree that grows out from the trunk",unit:"Unit 7"},
+  {word:"lay eggs",def:"to produce and put eggs outside the body, like birds do",unit:"Unit 7"},
+  {word:"leaf",def:"a flat green part of a plant, growing from a stem or branch or from the root",unit:"Unit 7"},
+  {word:"nest",def:"the place where a bird lays its eggs and takes care of its young",unit:"Unit 7"},
+  {word:"soil",def:"the top layer of earth in which plants grow",unit:"Unit 7"},
+  // Unit 7 Lesson 2
+  {word:"humid",def:"(of the air or climate) warm and slightly wet",unit:"Unit 7"},
+  {word:"smell",def:"the quality of a thing that you can sense with your nose",unit:"Unit 7"},
+  {word:"creature",def:"a living thing, real or imaginary, that can move around, such as an animal",unit:"Unit 7"},
+  {word:"liquid",def:"a substance that is able to flow freely",unit:"Unit 7"},
+  {word:"stem",def:"the main long and thin part of a plant that rises above the soil and supports the leaves and flowers",unit:"Unit 7"},
+  {word:"trap",def:"to catch and hold something so it cannot escape",unit:"Unit 7"},
+  {word:"stone",def:"a small piece of rock of any shape",unit:"Unit 7"},
+  {word:"active",def:"likely to explode violently or produce fire and hot liquid rock",unit:"Unit 7"},
+  {word:"alive",def:"living; not dead",unit:"Unit 7"},
+  {word:"curious",def:"having a strong desire to know about something",unit:"Unit 7"},
+  {word:"massive",def:"very large, heavy and solid",unit:"Unit 7"},
+  {word:"slippery",def:"difficult to stand on, move on, or hold because of being smooth, wet, icy, etc.",unit:"Unit 7"},
+  {word:"sticky",def:"having a substance on it that things easily attach to",unit:"Unit 7"},
+  // Unit 7 Lesson 3
+  {word:"sanctuary",def:"an area where wild birds or animals are protected and encouraged to produce young",unit:"Unit 7"},
+  {word:"climate",def:"the regular pattern of weather conditions of a particular place",unit:"Unit 7"},
+  {word:"success",def:"the fact that you have achieved something that you want and have been trying to do or get",unit:"Unit 7"},
+  {word:"variety",def:"several different sorts of the same thing",unit:"Unit 7"},
+  {word:"endangered",def:"(used about groups of animals, plants, etc.) at risk of no longer existing",unit:"Unit 7"},
+  {word:"cause",def:"to make something happen, especially something bad or unpleasant",unit:"Unit 7"},
+  {word:"ocean",def:"the mass of salt water that covers most of the earth's surface",unit:"Unit 7"},
+  // Unit 8 Lesson 1
+  {word:"cover",def:"to place something over or in front of something in order to hide, protect or decorate it",unit:"Unit 8"},
+  {word:"dump",def:"to put something somewhere in a quick and careless way",unit:"Unit 8"},
+  {word:"landfill",def:"an area where waste is buried under the ground",unit:"Unit 8"},
+  {word:"environmental",def:"connected with the natural conditions in which people, animals and plants live",unit:"Unit 8"},
+  {word:"improve",def:"to become better than before; to make something better than before",unit:"Unit 8"},
+  {word:"system",def:"a group of related parts that move or work together",unit:"Unit 8"},
+  {word:"battery",def:"a device placed inside a machine to supply it with electricity",unit:"Unit 8"},
+  {word:"can",def:"a metal container in which food and drink is sold",unit:"Unit 8"},
+  {word:"cardboard",def:"a stiff and thick kind of paper used especially for making boxes",unit:"Unit 8"},
+  {word:"electronics",def:"devices such as televisions, radios and computers that operate using many small electrical parts",unit:"Unit 8"},
+  {word:"newspaper",def:"large printed sheets containing news, articles, advertisements, etc. published every day or every week",unit:"Unit 8"},
+  {word:"plastic bag",def:"a light bag made of plastic",unit:"Unit 8"},
+  // Unit 8 Lesson 2
+  {word:"petrol",def:"a liquid made from petroleum and used especially as a fuel for engines",unit:"Unit 8"},
+  {word:"pollute",def:"to make land, water, air, etc. dirty and not safe or suitable to use",unit:"Unit 8"},
+  {word:"recycle",def:"to treat things that have already been used so that they can be used again",unit:"Unit 8"},
+  {word:"tap water",def:"water supplied through pipes to taps in a building",unit:"Unit 8"},
+  {word:"throw away",def:"to get rid of something that you no longer want",unit:"Unit 8"},
+  {word:"destroy",def:"to damage something so badly that it no longer exists, works, etc.",unit:"Unit 8"},
+  {word:"oil",def:"a thick liquid that is found in rock underground",unit:"Unit 8"},
+  {word:"rubber",def:"a strong substance that can be stretched and does not allow liquids to pass through it",unit:"Unit 8"},
+  {word:"association",def:"an official group of people who have joined together for a particular purpose",unit:"Unit 8"},
+  {word:"recreation",def:"something people do to relax or have fun",unit:"Unit 8"},
+  {word:"handle",def:"to deal with a situation, a person, an area of work or a strong emotion",unit:"Unit 8"},
+  {word:"air conditioning",def:"a system that cools and dries the air in a building or car",unit:"Unit 8"},
+  {word:"fan",def:"a machine that creates a current of air",unit:"Unit 8"},
+  {word:"free",def:"not costing any money",unit:"Unit 8"},
+  {word:"green",def:"trying to protect or meant to protect the natural world",unit:"Unit 8"},
+  {word:"product",def:"a thing that is grown, produced or created, usually for sale",unit:"Unit 8"},
+  {word:"waste",def:"materials that are no longer needed and are thrown away",unit:"Unit 8"},
+  {word:"by mistake",def:"in a way that is not planned or organised",unit:"Unit 8"},
+  // Unit 8 Lesson 3
+  {word:"shade",def:"an area that is dark and cool under or behind something because the sun's light does not get to it",unit:"Unit 8"},
+  {word:"oxygen",def:"a gas that is present in air and water and is necessary for people, animals and plants to live",unit:"Unit 8"},
+  {word:"drip",def:"(of liquid) to fall in small drops",unit:"Unit 8"},
+  {word:"global warming",def:"the increase in temperature of the earth's atmosphere caused by the increase of particular gases",unit:"Unit 8"},
+  {word:"ecosystem",def:"all the plants and living creatures in a particular area considered in relation to their physical environment",unit:"Unit 8"},
+  {word:"explorer",def:"a person who travels to places where few people have been before",unit:"Unit 8"},
+  {word:"tool",def:"something such as a hammer, saw or shovel that you hold in your hand and use for a particular task",unit:"Unit 8"},
+  {word:"generation",def:"a group of people born and living during the same time",unit:"Unit 8"},
+  // Unit 9 Lesson 1
+  {word:"design",def:"to plan and make decisions about something that is being built or created",unit:"Unit 9"},
+  {word:"follow (the) directions",def:"to do what someone tells you or to go the way someone shows you",unit:"Unit 9"},
+  {word:"information",def:"knowledge that you get about someone or something",unit:"Unit 9"},
+  {word:"sight",def:"the interesting places, especially in a town or city, that are often visited by tourists",unit:"Unit 9"},
+  {word:"location",def:"a place or position",unit:"Unit 9"},
+  {word:"cross the road",def:"to walk from one side of the road to the other",unit:"Unit 9"},
+  {word:"go past (the traffic lights)",def:"to move beyond something like walking or driving beyond the traffic lights",unit:"Unit 9"},
+  {word:"go straight on",def:"to keep moving in the same direction without turning",unit:"Unit 9"},
+  {word:"turn left/right",def:"to change direction and move to the left or right",unit:"Unit 9"},
+  {word:"go around the corner",def:"to walk or move past a bend or turning in the road",unit:"Unit 9"},
+  {word:"scavenger hunt",def:"a game in which players have to find various objects",unit:"Unit 9"},
+  {word:"treasure",def:"a collection of valuable things such as gold, silver and jewellery",unit:"Unit 9"},
+  // Unit 9 Lesson 2
+  {word:"cheap",def:"not costing a lot of money",unit:"Unit 9"},
+  {word:"expensive",def:"costing a lot of money",unit:"Unit 9"},
+  {word:"collection",def:"a group of objects, often of the same sort, that have been collected",unit:"Unit 9"},
+  {word:"fish",def:"to catch or try to catch fish",unit:"Unit 9"},
+  {word:"spend",def:"to pay for something",unit:"Unit 9"},
+  {word:"ticket",def:"a piece of paper that allows you to see a show, participate in an event, travel on a vehicle, etc.",unit:"Unit 9"},
+  {word:"try",def:"to make an effort to do something",unit:"Unit 9"},
+  {word:"bank",def:"a business where people keep their money, borrow money, etc.",unit:"Unit 9"},
+  {word:"ferry",def:"a boat or ship that carries people, vehicles and goods across a river or across a narrow part of the sea",unit:"Unit 9"},
+  {word:"shopping centre",def:"a group of shops built together, sometimes under one roof",unit:"Unit 9"},
+  {word:"skyscraper",def:"a very tall building in a city",unit:"Unit 9"},
+  {word:"mark",def:"to give marks to students' work",unit:"Unit 9"},
+  // Unit 9 Lesson 3
+  {word:"square",def:"an open area in a town, usually with four sides, surrounded by buildings",unit:"Unit 9"},
+  {word:"opinion",def:"your feelings or thoughts about somebody or something, rather than a fact",unit:"Unit 9"},
+  {word:"steps",def:"the surfaces that you walk on when you go up or down stairs",unit:"Unit 9"},
+  {word:"origin",def:"the beginning or cause of something",unit:"Unit 9"},
+  {word:"outer space",def:"the area outside the earth's atmosphere where all the other planets and stars are",unit:"Unit 9"},
+  {word:"material",def:"a substance that things can be made from",unit:"Unit 9"},
+  {word:"bagel",def:"a hard bread roll in the shape of a ring",unit:"Unit 9"},
+  {word:"chewy",def:"needing to be chewed a lot before it can be eaten",unit:"Unit 9"},
+  {word:"local",def:"belonging to or connected with the particular place or area that you are talking about",unit:"Unit 9"},
+  {word:"jog",def:"to run slowly especially for exercise",unit:"Unit 9"},
+  // Unit 10 Lesson 1
+  {word:"social media",def:"websites and software programs used for social networking",unit:"Unit 10"},
+  {word:"album",def:"a book in which you keep photographs, stamps, etc.",unit:"Unit 10"},
+  {word:"print",def:"to cause words, images, etc. to appear on paper by using a machine called a printer",unit:"Unit 10"},
+  {word:"show",def:"to let somebody see something",unit:"Unit 10"},
+  {word:"comment",def:"something that you say or write that gives an opinion on or explains somebody or something",unit:"Unit 10"},
+  {word:"post",def:"to put information or pictures on a website",unit:"Unit 10"},
+  {word:"share",def:"to give some of what you have to somebody else",unit:"Unit 10"},
+  {word:"app",def:"a piece of software that you can download to a device such as a smartphone or tablet",unit:"Unit 10"},
+  {word:"digital",def:"of or relating to information that is stored in the form of the numbers 0 and 1",unit:"Unit 10"},
+  {word:"download",def:"to get data from another computer, usually using the internet",unit:"Unit 10"},
+  {word:"internet",def:"a system that connects computers throughout the world",unit:"Unit 10"},
+  {word:"upload",def:"to send data to another computer",unit:"Unit 10"},
+  {word:"film",def:"special thin plastic used for making photographs or moving pictures, used in cameras",unit:"Unit 10"},
+  {word:"selfie",def:"a photo of yourself that you take, typically with a smartphone or webcam",unit:"Unit 10"},
+  {word:"sticker",def:"a small digital image that you can use to express an idea or emotion on social media",unit:"Unit 10"},
+  {word:"rugby",def:"a game played by two teams using an oval ball which may be kicked or carried",unit:"Unit 10"},
+  // Unit 10 Lesson 2
+  {word:"invent",def:"to create or produce something useful for the first time",unit:"Unit 10"},
+  {word:"programme",def:"something that people watch on television or listen to on the radio",unit:"Unit 10"},
+  {word:"quality",def:"how good or bad something is",unit:"Unit 10"},
+  {word:"record",def:"to store sounds, music, images, etc. on tape or disk so that it can be heard or seen later",unit:"Unit 10"},
+  {word:"technology",def:"the use of science in industry, engineering, etc. to invent useful things or to solve problems",unit:"Unit 10"},
+  {word:"entertain",def:"to interest somebody or make somebody laugh in order to please them",unit:"Unit 10"},
+  {word:"imagine",def:"to form a picture in your mind of what something might be like",unit:"Unit 10"},
+  {word:"documentary",def:"a film or radio or television programme giving facts about something",unit:"Unit 10"},
+  {word:"news",def:"information that is reported in a newspaper, magazine, television news programme, etc.",unit:"Unit 10"},
+  {word:"reality show",def:"television shows that are based on real people in real situations, presented as entertainment",unit:"Unit 10"},
+  {word:"series",def:"a set of regularly presented television shows involving the same group of characters or the same subject",unit:"Unit 10"},
+  {word:"sitcom",def:"a regular comedy programme on television that shows the same characters in different funny situations",unit:"Unit 10"},
+  {word:"cartoon",def:"an animated film or television show",unit:"Unit 10"},
+  {word:"virtual reality",def:"images and sounds created by a computer that seem almost real to the user",unit:"Unit 10"},
+  // Unit 10 Lesson 3
+  {word:"follower",def:"a person who chooses to regularly receive somebody's messages using a social media service",unit:"Unit 10"},
+  {word:"channel",def:"a television station",unit:"Unit 10"},
+  {word:"review",def:"a report in the media in which someone gives their opinion of something such as a new book or movie",unit:"Unit 10"},
+  {word:"voice",def:"the sounds that are made when people speak or sing",unit:"Unit 10"},
+  {word:"generous",def:"freely giving or sharing money and other valuable things",unit:"Unit 10"},
+  {word:"neighbourhood",def:"a district or an area of a town",unit:"Unit 10"},
+  // Unit 11 Lesson 1
+  {word:"destination",def:"a place to which a person is going or something is being sent",unit:"Unit 11"},
+  {word:"get on",def:"to enter a vehicle such as a bus, train or plane",unit:"Unit 11"},
+  {word:"get off",def:"to leave a vehicle such as a bus, train or plane",unit:"Unit 11"},
+  {word:"parking",def:"a space or an area for leaving vehicles",unit:"Unit 11"},
+  {word:"pedestrian",def:"a person walking in the street and not travelling in a vehicle",unit:"Unit 11"},
+  {word:"traffic",def:"the vehicles that are on a road at a particular time",unit:"Unit 11"},
+  {word:"bus stop",def:"a place at the side of a road marked with a sign where buses stop",unit:"Unit 11"},
+  {word:"driver",def:"a person who drives a vehicle",unit:"Unit 11"},
+  {word:"bike lane",def:"a part of a road that only bicycles are allowed to use",unit:"Unit 11"},
+  {word:"tram",def:"a vehicle that travels on streets on metal tracks used for carrying passengers",unit:"Unit 11"},
+  {word:"motorbike",def:"a road vehicle with two wheels, driven by an engine, with one seat for the driver",unit:"Unit 11"},
+  {word:"scooter",def:"a light motorbike, usually with small wheels and a curved cover at the front",unit:"Unit 11"},
+  {word:"resident",def:"a person who lives in a particular place or who has their home there",unit:"Unit 11"},
+  {word:"transport",def:"a system for carrying people or goods from one place to another using vehicles, roads, etc.",unit:"Unit 11"},
+  {word:"planner",def:"a person whose job is to plan the growth and development of a town",unit:"Unit 11"},
+  // Unit 11 Lesson 2
+  {word:"passenger",def:"a person who is travelling in a car, bus, train, plane or ship and who is not driving it",unit:"Unit 11"},
+  {word:"track",def:"rails that a train moves along",unit:"Unit 11"},
+  {word:"billion",def:"1,000,000,000; one thousand million",unit:"Unit 11"},
+  {word:"display",def:"to put something in a place where people can see it easily",unit:"Unit 11"},
+  {word:"escalator",def:"moving stairs that carry people between different floors of a large building",unit:"Unit 11"},
+  {word:"gallery",def:"a room or building for showing works of art, especially to the public",unit:"Unit 11"},
+  {word:"inspector",def:"a person whose job is to check tickets on a bus or train",unit:"Unit 11"},
+  {word:"lift",def:"a machine that carries people or goods up and down to different levels in a building",unit:"Unit 11"},
+  {word:"loudspeaker",def:"a device used to make sound louder and send it out so that many people can hear it",unit:"Unit 11"},
+  {word:"chandelier",def:"a large, decorated light that hangs from a ceiling with branches for holding many light bulbs",unit:"Unit 11"},
+  {word:"mosaic",def:"a picture or pattern made by placing together small pieces of glass, stone, etc. of different colours",unit:"Unit 11"},
+  {word:"sculpture",def:"a work of art that is a solid figure or object made by carving or shaping wood, stone, clay, metal, etc.",unit:"Unit 11"},
+  // Unit 11 Lesson 3
+  {word:"pass",def:"a card or ticket which shows that you are allowed to enter or leave a particular place or to ride a vehicle",unit:"Unit 11"},
+  {word:"ticket machine",def:"an automatic device that sells tickets for public transportation without needing a human cashier",unit:"Unit 11"},
+  {word:"timetable",def:"a chart showing the times at which trains, buses and planes leave and arrive",unit:"Unit 11"},
+  {word:"gondola",def:"a long boat with a flat bottom and high parts at each end, used on canals in Venice",unit:"Unit 11"},
+  {word:"romantic",def:"making someone think of love",unit:"Unit 11"},
+  {word:"cable car",def:"a vehicle that hangs from and is pulled by a moving cable and carries passengers up and down a mountain",unit:"Unit 11"},
+  {word:"means",def:"a way of achieving or doing something",unit:"Unit 11"},
+  {word:"aquarium",def:"a building where people can go to see fish and other water creatures",unit:"Unit 11"},
+  {word:"entire",def:"including everything, everyone or every part",unit:"Unit 11"},
+  {word:"distance",def:"the amount of space between two places or things",unit:"Unit 11"},
+  // Unit 12 Lesson 1
+  {word:"check",def:"to look at something carefully to find mistakes, problems, etc. or to make sure there is nothing wrong",unit:"Unit 12"},
+  {word:"patient",def:"able to wait for a long time or accept annoying behaviour without becoming angry",unit:"Unit 12"},
+  {word:"customer",def:"a person who buys goods or services from a shop or business",unit:"Unit 12"},
+  {word:"queue",def:"a line of people, cars, etc. waiting for something or to do something",unit:"Unit 12"},
+  {word:"opinion",def:"your feelings or thoughts about somebody or something, rather than a fact",unit:"Unit 12"},
+  {word:"skill",def:"a particular ability or type of ability",unit:"Unit 12"},
+  {word:"artist",def:"a person who creates art",unit:"Unit 12"},
+  {word:"chef",def:"a professional cook who usually is in charge of a kitchen in a restaurant",unit:"Unit 12"},
+  {word:"detective",def:"a person, especially a police officer, whose job is to investigate crimes and catch criminals",unit:"Unit 12"},
+  {word:"mechanic",def:"a person whose job is repairing machines, especially the engines of vehicles",unit:"Unit 12"},
+  {word:"reporter",def:"a person who collects and reports news for newspapers, radio or television",unit:"Unit 12"},
+  {word:"sailor",def:"a person who works on a ship as a member of the crew",unit:"Unit 12"},
+  // Unit 12 Lesson 2
+  {word:"designer",def:"a person who plans how something new will look and be made",unit:"Unit 12"},
+  {word:"day off",def:"a day on which you do not have to work",unit:"Unit 12"},
+  {word:"focus on",def:"to give attention, effort, or energy to one specific task, goal, or activity",unit:"Unit 12"},
+  {word:"full-time",def:"done during the full number of hours considered normal or standard",unit:"Unit 12"},
+  {word:"part-time",def:"working or involving fewer hours than is considered normal or standard",unit:"Unit 12"},
+  {word:"job",def:"the work that a person does regularly in order to earn money",unit:"Unit 12"},
+  {word:"author",def:"a person who writes books or the person who wrote a particular book",unit:"Unit 12"},
+  {word:"tax",def:"money that you have to pay to the government so that it can pay for public services",unit:"Unit 12"},
+  {word:"desire",def:"a strong wish to have or do something",unit:"Unit 12"},
+  {word:"sense",def:"one of the five powers (sight, hearing, smell, taste and touch) your body uses to get information",unit:"Unit 12"},
+  {word:"taste",def:"the sense that allows you to recognize different foods when you put them in your mouth",unit:"Unit 12"},
+  {word:"career",def:"the job or series of jobs that you do during your working life",unit:"Unit 12"},
+  {word:"employee",def:"a person who is paid to work for somebody",unit:"Unit 12"},
+  {word:"experience",def:"the knowledge and skill that you have gained through doing something for a period of time",unit:"Unit 12"},
+  {word:"manager",def:"a person who is in charge of running a business, a shop or a similar organisation",unit:"Unit 12"},
+  {word:"staff",def:"a group of people who work for an organisation or business",unit:"Unit 12"},
+  // Unit 12 Lesson 3
+  {word:"organisation",def:"a group of people who form a business, club, etc. together in order to achieve a particular aim",unit:"Unit 12"},
+  {word:"the Arctic",def:"the regions of the world around the North Pole",unit:"Unit 12"},
+  {word:"surface",def:"the outside or top layer of something",unit:"Unit 12"},
+  {word:"rover",def:"a spacecraft designed to move on a planet or moon",unit:"Unit 12"},
+  {word:"greenhouse",def:"a building with glass sides and a glass roof for growing plants in",unit:"Unit 12"},
+  {word:"planetary",def:"relating to a planet or planets",unit:"Unit 12"},
+  {word:"shelter",def:"a structure built to give protection, especially from the weather or from attack",unit:"Unit 12"},
+  {word:"submarine",def:"a ship that can travel underwater",unit:"Unit 12"},
+  {word:"toxic",def:"containing poison",unit:"Unit 12"},
+  {word:"dust",def:"a fine powder that consists of very small pieces of sand, earth, etc.",unit:"Unit 12"},
+  {word:"attract",def:"to cause someone or something to go to or move to or towards a place",unit:"Unit 12"},
+  {word:"brave",def:"willing to do things that are difficult or dangerous; not afraid",unit:"Unit 12"},
+  {word:"professional",def:"doing something as a paid job rather than as a hobby",unit:"Unit 12"},
+  {word:"worry",def:"something that worries you",unit:"Unit 12"},
+  {word:"seriously",def:"in a serious way",unit:"Unit 12"},
+];
+
+// State
+let currentUnit = 'all';
+let currentMode = 'flashcard';
+let deck = [];
+let deckIndex = 0;
+let known = new Set();
+let unknown = new Set();
+let isFlipped = false;
+
+// Quiz state
+let quizWords = [];
+let quizIndex = 0;
+let quizCorrect = 0;
+let quizWrong = 0;
+
+// Init
+function getWords() {
+  if (currentUnit === 'all') return [...ALL_WORDS];
+  return ALL_WORDS.filter(w => w.unit === currentUnit);
+}
+
+function buildUnitTabs() {
+  const units = ['all','Unit 7','Unit 8','Unit 9','Unit 10','Unit 11','Unit 12'];
+  const labels = {all:'全部', 'Unit 7':'Unit 7', 'Unit 8':'Unit 8', 'Unit 9':'Unit 9', 'Unit 10':'Unit 10', 'Unit 11':'Unit 11', 'Unit 12':'Unit 12'};
+  const container = document.getElementById('unit-tabs');
+  container.innerHTML = units.map(u =>
+    `<button class="unit-tab${u===currentUnit?' active':''}" onclick="selectUnit('${u}')">${labels[u]}</button>`
+  ).join('');
+}
+
+function selectUnit(u) {
+  currentUnit = u;
+  buildUnitTabs();
+  initDeck();
+  initQuiz();
+  renderReview();
+  if (currentMode === 'flashcard') showCard();
+  else if (currentMode === 'quiz') showQuiz();
+}
+
+function initDeck(wordsOverride) {
+  deck = wordsOverride || getWords();
+  deckIndex = 0; known.clear(); unknown.clear();
+  isFlipped = false;
+  hideComplete();
+  updateStats();
+}
+
+function initQuiz() {
+  quizWords = shuffle([...getWords()]);
+  quizIndex = 0; quizCorrect = 0; quizWrong = 0;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// FLASHCARD
+function showCard() {
+  if (deckIndex >= deck.length) { showComplete(); return; }
+  const w = deck[deckIndex];
+  document.getElementById('fc-word').textContent = w.word;
+  document.getElementById('fc-unit').textContent = w.unit;
+  document.getElementById('fc-def').textContent = w.def;
+  // Reset flip
+  isFlipped = false;
+  document.getElementById('card-inner').classList.remove('flipped');
+  document.getElementById('fc-actions').style.display = 'none';
+  updateProgress();
+}
+
+function flipCard() {
+  if (deckIndex >= deck.length) return;
+  isFlipped = !isFlipped;
+  document.getElementById('card-inner').classList.toggle('flipped', isFlipped);
+  if (isFlipped) {
+    document.getElementById('fc-actions').style.display = 'flex';
+  }
+}
+
+function markCard(isKnown) {
+  const w = deck[deckIndex];
+  if (isKnown) known.add(w.word); else unknown.add(w.word);
+  updateStats();
+  nextCard();
+}
+
+function nextCard() {
+  deckIndex++;
+  isFlipped = false;
+  showCard();
+}
+
+function prevCard() {
+  if (deckIndex > 0) { deckIndex--; showCard(); }
+}
+
+function shuffleDeck() {
+  deck = shuffle([...getWords()]);
+  deckIndex = 0; known.clear(); unknown.clear();
+  isFlipped = false; hideComplete();
+  updateStats(); showCard();
+}
+
+function restartDeck() {
+  initDeck(); hideComplete(); showCard();
+}
+
+function reviewUnknown() {
+  const uw = getWords().filter(w => unknown.has(w.word));
+  if (uw.length === 0) { initDeck(); } else { initDeck(uw); }
+  hideComplete(); showCard();
+}
+
+function showComplete() {
+  document.getElementById('card-container').style.display = 'none';
+  document.querySelectorAll('.btn-ghost, .btn-next').forEach(b => {
+    if (!b.closest('#fc-complete')) b.style.display = 'none';
+  });
+  document.getElementById('fc-complete').classList.remove('hidden');
+  document.getElementById('cc-known').textContent = known.size;
+  document.getElementById('cc-unknown').textContent = unknown.size;
+}
+
+function hideComplete() {
+  document.getElementById('card-container').style.display = '';
+  document.querySelectorAll('.btn-ghost, .btn-next').forEach(b => {
+    if (!b.closest('#fc-complete')) b.style.display = '';
+  });
+  document.getElementById('fc-complete').classList.add('hidden');
+}
+
+function updateProgress() {
+  const total = deck.length;
+  const pct = total ? (deckIndex / total * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = `${deckIndex} / ${total}`;
+}
+
+function updateStats() {
+  const total = getWords().length;
+  document.getElementById('stat-known').textContent = `${known.size} 已掌握`;
+  document.getElementById('stat-unknown').textContent = `${unknown.size} 待复习`;
+  document.getElementById('stat-total').textContent = `${total} 总计`;
+  updateProgress();
+}
+
+// QUIZ
+function showQuiz() {
+  if (quizIndex >= quizWords.length) { showQuizComplete(); return; }
+  document.getElementById('quiz-complete').classList.add('hidden');
+  document.querySelector('#quiz-mode .quiz-question').style.display = '';
+  document.getElementById('qz-options').style.display = '';
+
+  const w = quizWords[quizIndex];
+  document.getElementById('qz-question').textContent = w.def;
+  document.getElementById('qz-feedback').textContent = '';
+  document.getElementById('qz-next-btn').classList.add('hidden');
+
+  // Build 4 options
+  const allW = getWords();
+  let opts = [w];
+  const others = shuffle(allW.filter(x => x.word !== w.word));
+  opts = opts.concat(others.slice(0, 3));
+  opts = shuffle(opts);
+
+  const container = document.getElementById('qz-options');
+  container.innerHTML = '';
+  opts.forEach(o => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = o.word;
+    btn.onclick = () => checkQuiz(btn, o.word, w.word);
+    container.appendChild(btn);
+  });
+
+  updateProgress();
+}
+
+function checkQuiz(btn, chosen, correct) {
+  document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+  if (chosen === correct) {
+    btn.classList.add('correct');
+    document.getElementById('qz-feedback').style.color = 'var(--green)';
+    document.getElementById('qz-feedback').textContent = '✓ 正确！';
+    quizCorrect++;
+  } else {
+    btn.classList.add('wrong');
+    document.getElementById('qz-feedback').style.color = 'var(--red)';
+    document.getElementById('qz-feedback').textContent = `✗ 正确答案是：${correct}`;
+    quizWrong++;
+    document.querySelectorAll('.quiz-opt').forEach(b => {
+      if (b.textContent === correct) b.classList.add('correct');
+    });
+  }
+  document.getElementById('qz-next-btn').classList.remove('hidden');
+  quizIndex++;
+}
+
+function nextQuiz() { showQuiz(); }
+
+function showQuizComplete() {
+  document.querySelector('#quiz-mode .quiz-question').style.display = 'none';
+  document.getElementById('qz-options').style.display = 'none';
+  document.getElementById('qz-feedback').textContent = '';
+  document.getElementById('qz-next-btn').classList.add('hidden');
+  document.getElementById('quiz-complete').classList.remove('hidden');
+  const total = quizCorrect + quizWrong;
+  document.getElementById('qc-correct').textContent = quizCorrect;
+  document.getElementById('qc-wrong').textContent = quizWrong;
+  document.getElementById('qc-pct').textContent = total ? Math.round(quizCorrect/total*100) + '%' : '0%';
+}
+
+function restartQuiz() {
+  initQuiz();
+  document.getElementById('quiz-complete').classList.add('hidden');
+  document.querySelector('#quiz-mode .quiz-question').style.display = '';
+  document.getElementById('qz-options').style.display = '';
+  showQuiz();
+}
+
+// REVIEW
+function renderReview() {
+  const words = getWords();
+  const list = document.getElementById('review-list');
+  list.innerHTML = words.map(w => `
+    <div class="review-item ${known.has(w.word) ? 'review-known' : ''}">
+      <div class="review-word">${w.word}</div>
+      <div class="review-def">${w.def}</div>
+    </div>
+  `).join('');
+}
+
+// Mode switching
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['flashcard','quiz','review'][i] === mode);
+  });
+  document.getElementById('flashcard-mode').classList.toggle('hidden', mode !== 'flashcard');
+  document.getElementById('quiz-mode').classList.toggle('hidden', mode !== 'quiz');
+  document.getElementById('review-mode').classList.toggle('hidden', mode !== 'review');
+  document.getElementById('progress-wrap').classList.toggle('hidden', mode === 'review');
+  document.getElementById('stats-row').classList.toggle('hidden', mode === 'review');
+
+  if (mode === 'flashcard') showCard();
+  else if (mode === 'quiz') { initQuiz(); showQuiz(); }
+  else if (mode === 'review') renderReview();
+}
+
+// Bootstrap
+buildUnitTabs();
+initDeck();
+initQuiz();
+showCard();
+</script>
+</body>
+</html>
