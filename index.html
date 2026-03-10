@@ -1111,40 +1111,40 @@ function StudentApp({ user, onLogout }) {
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
       onGoHome={(score)=>{
-        const topicId = String(quiz.topicId);
-        const nd=JSON.parse(JSON.stringify(prog));
-        const p=nd.topicProgress[topicId];
-        if(p){
-          const passed=score>=6;
-          p.learned=true; p.quizScore=score; p.reviewCount=(p.reviewCount||0)+1; p.lastReview=today;
-          const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
-          p.intervalIdx=ni;
-          const nx=new Date(); nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
-          p.nextReview=nx.toISOString().split("T")[0];
-          nd.xp=(nd.xp||0)+score*10;
-          save(nd);
-        }
-        setScreen("dash");
-        setQuiz(null);
-        setSel(null);
+        setScreen("dash"); setQuiz(null); setSel(null);
+        try {
+          const topicId = String(quiz.topicId);
+          const nd=JSON.parse(JSON.stringify(prog));
+          const p=nd.topicProgress[topicId];
+          if(p){
+            const passed=score>=6;
+            p.learned=true; p.quizScore=score; p.reviewCount=(p.reviewCount||0)+1; p.lastReview=today;
+            const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
+            p.intervalIdx=ni;
+            const nx=new Date(); nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
+            p.nextReview=nx.toISOString().split("T")[0];
+            nd.xp=(nd.xp||0)+score*10;
+            save(nd);
+          }
+        } catch(e) { console.error("save err",e); }
       }}
       onFinish={(score)=>{
-        const topicId = String(quiz.topicId);
-        const nd=JSON.parse(JSON.stringify(prog));
-        const p=nd.topicProgress[topicId];
-        if(p){
-          const passed=score>=6;
-          p.learned=true;p.quizScore=score;p.reviewCount=(p.reviewCount||0)+1;p.lastReview=today;
-          const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
-          p.intervalIdx=ni;
-          const nx=new Date();nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
-          p.nextReview=nx.toISOString().split("T")[0];
-          nd.xp=(nd.xp||0)+score*10;
-          save(nd);
-        }
-        setScreen("dash");
-        setQuiz(null);
-        setSel(null);
+        setScreen("dash"); setQuiz(null); setSel(null);
+        try {
+          const topicId=String(quiz.topicId);
+          const nd=JSON.parse(JSON.stringify(prog));
+          const p=nd.topicProgress[topicId];
+          if(p){
+            const passed=score>=6;
+            p.learned=true;p.quizScore=score;p.reviewCount=(p.reviewCount||0)+1;p.lastReview=today;
+            const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
+            p.intervalIdx=ni;
+            const nx=new Date();nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
+            p.nextReview=nx.toISOString().split("T")[0];
+            nd.xp=(nd.xp||0)+score*10;
+            save(nd);
+          }
+        } catch(e) { console.error("save err",e); }
       }}
     />
   );
