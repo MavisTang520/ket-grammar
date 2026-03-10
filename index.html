@@ -1073,9 +1073,11 @@ function AdminApp({ user, onLogout }) {
 // ═══════════════════════════════════════════════════════
 function StudentApp({ user, onLogout }) {
   const [tab, setTab]       = useState("today");
-  const [screen, setScreen] = useState("dash");
   const [selTopic, setSel]  = useState(null);
   const [quiz, setQuiz]     = useState(null);
+  // Derive screen from state - no separate screen state needed
+  const screen = quiz ? "quiz" : selTopic ? "study" : "dash";
+  const setScreen = (s) => { if(s==="dash"){ setQuiz(null); setSel(null); } };
   const [prog, setProg]     = useState(null);
   const today = new Date().toISOString().split("T")[0];
 
@@ -1099,16 +1101,16 @@ function StudentApp({ user, onLogout }) {
   const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[String(t.id)]?.learned);
   const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
 
-  const openTopic = (t) => { setSel(t); setScreen("study"); };
+  const openTopic = (t) => { setSel(t); setQuiz(null); };
 
-  if (screen==="study"&&selTopic) return(
+  if (screen==="study") return(
     <StudyScreen topic={selTopic} userName={user.displayName}
-      onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});setScreen("quiz");}}
-      onBack={()=>setScreen("dash")} />
+      onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});}}
+      onBack={()=>setSel(null)} />
   );
-  if (screen==="quiz"&&quiz&&quiz.topicId) return(
+  if (screen==="quiz") return(
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
-      quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
+      quiz={quiz} setQuiz={setQuiz} onBack={()=>setQuiz(null)}
       onGoHome={(score)=>{
         const topicId = String(quiz.topicId);
         const nd=JSON.parse(JSON.stringify(prog));
@@ -1123,7 +1125,6 @@ function StudentApp({ user, onLogout }) {
         save(nd);
         setQuiz(null);
         setSel(null);
-        setScreen("dash");
       }}
       onFinish={(score)=>{
         const nd=JSON.parse(JSON.stringify(prog));
@@ -1138,7 +1139,6 @@ function StudentApp({ user, onLogout }) {
         save(nd);
         setQuiz(null);
         setSel(null);
-        setScreen("dash");
       }}
     />
   );
