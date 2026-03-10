@@ -1109,7 +1109,21 @@ function StudentApp({ user, onLogout }) {
   if (screen==="quiz"&&quiz) return(
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
-      onGoHome={()=>{ setScreen("dash"); setQuiz(null); setSel(null); }}
+      onGoHome={(score)=>{
+        const topicId = quiz.topicId;
+        const nd=JSON.parse(JSON.stringify(prog));
+        const p=nd.topicProgress[topicId];
+        const passed=score>=6;
+        p.learned=true; p.quizScore=score; p.reviewCount=(p.reviewCount||0)+1; p.lastReview=today;
+        const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
+        p.intervalIdx=ni;
+        const nx=new Date(); nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
+        p.nextReview=nx.toISOString().split("T")[0];
+        nd.xp=(nd.xp||0)+score*10;
+        save(nd);
+        setScreen("dash");
+        setTimeout(()=>{ setQuiz(null); setSel(null); }, 150);
+      }}
       onFinish={(score)=>{
         const nd=JSON.parse(JSON.stringify(prog));
         const p=nd.topicProgress[quiz.topicId];
@@ -1287,13 +1301,9 @@ function QuizScreen({topic,quiz,setQuiz,onFinish,onBack,onGoHome}){
     const ns=quiz.score+(ok?1:0);
     const newWrong = !ok && sel!==null ? [...wrongAnswers, {idx:quiz.qIdx, q:q.q, options:q.options, answer:q.answer, selected:sel}] : wrongAnswers;
     if(quiz.qIdx+1>=topic.quiz.length){
-      setWrongAnswers(newWrong);
-      setFinalScore(ns);
-      setFinished(true);
+      setWrongAnswers(newWrong); setFinalScore(ns); setFinished(true);
     }else{
-      setWrongAnswers(newWrong);
-      setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns});
-      setSel(null);setFb(false);
+      setWrongAnswers(newWrong); setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns}); setSel(null); setFb(false);
     }
   };
   if(finished){
@@ -1323,17 +1333,14 @@ function QuizScreen({topic,quiz,setQuiz,onFinish,onBack,onGoHome}){
             {passed?"🎊 返回首页":"🔄 返回再学一遍"}
           </button>
         </div>
-
         {wrongAnswers.length>0&&(
           <div style={{padding:"0 16px 24px"}}>
-            <div style={{fontSize:14,fontWeight:800,color:"#2d3436",marginBottom:12,paddingTop:8,borderTop:"2px solid #f0f0f0"}}>
+            <div style={{fontSize:14,fontWeight:800,color:"#2d3436",marginBottom:12,paddingTop:16,borderTop:"2px solid #f0f0f0"}}>
               📝 错题回顾（{wrongAnswers.length}题）
             </div>
             {wrongAnswers.map((w,i)=>(
               <div key={i} style={{background:"#fff",borderRadius:14,padding:16,marginBottom:10,boxShadow:"0 2px 8px rgba(0,0,0,0.06)",borderLeft:"4px solid #e17055"}}>
-                <div style={{fontSize:13,fontWeight:700,color:"#2d3436",marginBottom:10,lineHeight:1.5}}>
-                  Q{w.idx+1}. {w.q}
-                </div>
+                <div style={{fontSize:13,fontWeight:700,color:"#2d3436",marginBottom:10,lineHeight:1.5}}>Q{w.idx+1}. {w.q}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:"#f8d7da",border:"1px solid #f5c6cb"}}>
                     <span style={{fontSize:11,fontWeight:700,color:"#dc3545",minWidth:20}}>✗ {["A","B","C","D"][w.selected]}</span>
