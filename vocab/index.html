@@ -587,6 +587,9 @@
       <div class="stat-dot" style="background:var(--accent)"></div>
       <span id="stat-total">0 总计</span>
     </div>
+    <div class="stat">
+      <span style="cursor:pointer;color:var(--text-muted);font-size:0.75rem;text-decoration:underline" onclick="if(confirm('确定清除所有学习记录吗？'))clearKnown()">重置记录</span>
+    </div>
   </div>
 
   <!-- FLASHCARD MODE -->
@@ -922,12 +925,37 @@ const ALL_WORDS = [
   {word:"seriously",def:"in a serious way",unit:"Unit 12"},
 ];
 
+// ── localStorage helpers ──────────────────────────────────
+const LS_KEY = 'vocab_known_v1';
+
+function loadKnown() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch(e) { return new Set(); }
+}
+
+function saveKnown() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify([...known]));
+  } catch(e) {}
+}
+
+function clearKnown() {
+  known.clear();
+  unknown.clear();
+  saveKnown();
+  updateStats();
+  renderReview();
+}
+// ─────────────────────────────────────────────────────────
+
 // State
 let currentUnit = 'all';
 let currentMode = 'flashcard';
 let deck = [];
 let deckIndex = 0;
-let known = new Set();
+let known = loadKnown();   // ← load from localStorage on start
 let unknown = new Set();
 let isFlipped = false;
 
@@ -964,7 +992,9 @@ function selectUnit(u) {
 
 function initDeck(wordsOverride) {
   deck = wordsOverride || getWords();
-  deckIndex = 0; known.clear(); unknown.clear();
+  deckIndex = 0;
+  // keep known from localStorage, only clear unknown
+  unknown.clear();
   isFlipped = false;
   hideComplete();
   updateStats();
@@ -1008,7 +1038,9 @@ function flipCard() {
 
 function markCard(isKnown) {
   const w = deck[deckIndex];
-  if (isKnown) known.add(w.word); else unknown.add(w.word);
+  if (isKnown) { known.add(w.word); unknown.delete(w.word); }
+  else { unknown.add(w.word); known.delete(w.word); }
+  saveKnown();
   updateStats();
   nextCard();
 }
@@ -1025,7 +1057,7 @@ function prevCard() {
 
 function shuffleDeck() {
   deck = shuffle([...getWords()]);
-  deckIndex = 0; known.clear(); unknown.clear();
+  deckIndex = 0; unknown.clear();
   isFlipped = false; hideComplete();
   updateStats(); showCard();
 }
