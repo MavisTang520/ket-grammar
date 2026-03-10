@@ -1106,9 +1106,10 @@ function StudentApp({ user, onLogout }) {
       onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});setScreen("quiz");}}
       onBack={()=>setScreen("dash")} />
   );
-  if (screen==="quiz"&&quiz&&GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)) return(
+  if (screen==="quiz"&&quiz) return(
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
+      onGoHome={()=>{ setScreen("dash"); setQuiz(null); setSel(null); }}
       onFinish={(score)=>{
         const nd=JSON.parse(JSON.stringify(prog));
         const p=nd.topicProgress[quiz.topicId];
@@ -1121,8 +1122,7 @@ function StudentApp({ user, onLogout }) {
         nd.xp=(nd.xp||0)+score*10;
         save(nd);
         setScreen("dash");
-        setQuiz(null);
-        setSel(null);
+        setTimeout(()=>{ setQuiz(null); setSel(null); }, 100);
       }}
     />
   );
@@ -1272,7 +1272,7 @@ function StudyScreen({topic,onStartQuiz,onBack,userName}){
   );
 }
 
-function QuizScreen({topic,quiz,setQuiz,onFinish,onBack}){
+function QuizScreen({topic,quiz,setQuiz,onFinish,onBack,onGoHome}){
   const [sel,setSel]=useState(null);
   const [fb,setFb]=useState(false);
   const [finished,setFinished]=useState(false);
@@ -1288,7 +1288,7 @@ function QuizScreen({topic,quiz,setQuiz,onFinish,onBack}){
     return(
       <div style={S.sPage}>
         <div style={{...S.sHdr,background:passed?"linear-gradient(135deg,#00b894,#00cec9)":"linear-gradient(135deg,#e17055,#d63031)"}}>
-          <button style={S.backBtn} onClick={()=>onFinish(finalScore)}>← 返回</button>
+          <button style={S.backBtn} onClick={()=>onGoHome(finalScore)}>← 返回</button>
           <h2 style={{color:"#fff",fontSize:14,fontWeight:900,margin:"8px 0 0"}}>{topic.emoji} 练习结果</h2>
         </div>
         <div style={{textAlign:"center",padding:"40px 24px"}}>
@@ -1306,7 +1306,7 @@ function QuizScreen({topic,quiz,setQuiz,onFinish,onBack}){
               <div style={{fontSize:11,color:"#636e72"}}>获得XP</div>
             </div>
           </div>
-          <button style={{...S.primBtn,background:passed?"#00b894":"#667eea"}} onClick={()=>onFinish(finalScore)}>
+          <button style={{...S.primBtn,background:passed?"#00b894":"#667eea"}} onClick={()=>onGoHome(finalScore)}>
             {passed?"🎊 返回首页":"🔄 返回再学一遍"}
           </button>
         </div>
