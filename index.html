@@ -579,7 +579,7 @@ function encPwd(s) { try { return btoa(unescape(encodeURIComponent(s))); } catch
 function makeProgress(planDays) {
   const today = new Date().toISOString().split("T")[0];
   const tp = {};
-  GRAMMAR_TOPICS.forEach(t => { tp[t.id] = { learned:false, quizScore:0, reviewCount:0, nextReview:null, lastReview:null, intervalIdx:0 }; });
+  GRAMMAR_TOPICS.forEach(t => { tp[String(t.id)] = { learned:false, quizScore:0, reviewCount:0, nextReview:null, lastReview:null, intervalIdx:0 }; });
   return { planDays, startDate:today, topicProgress:tp, xp:0 };
 }
 
@@ -889,7 +889,7 @@ function AdminApp({ user, onLogout }) {
                 ))}
               <div style={S.secTitle}>📚 各考点班级掌握率</div>
               {GRAMMAR_TOPICS.map(t=>{
-                const n=students.filter(([,u])=>u.progress?.topicProgress?.[t.id]?.learned).length;
+                const n=students.filter(([,u])=>u.progress?.topicProgress?.[String(t.id)]?.learned).length;
                 const pct=totalS?Math.round(n/totalS*100):0;
                 return(
                   <div key={t.id} style={S.pRow}>
@@ -1096,8 +1096,8 @@ function StudentApp({ user, onLogout }) {
   const dayNum = Math.floor((new Date(today)-new Date(prog.startDate))/86400000)+1;
   const totalLearned = Object.values(prog.topicProgress).filter(p=>p.learned).length;
   const pct = Math.round(totalLearned/GRAMMAR_TOPICS.length*100);
-  const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[t.id]?.learned);
-  const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[t.id];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
+  const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[String(t.id)]?.learned);
+  const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
 
   const openTopic = (t) => { setSel(t); setScreen("study"); };
 
@@ -1110,7 +1110,7 @@ function StudentApp({ user, onLogout }) {
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
       onGoHome={(score)=>{
-        const topicId = quiz.topicId;
+        const topicId = String(quiz.topicId);
         const nd=JSON.parse(JSON.stringify(prog));
         const p=nd.topicProgress[topicId];
         const passed=score>=6;
@@ -1126,7 +1126,7 @@ function StudentApp({ user, onLogout }) {
       }}
       onFinish={(score)=>{
         const nd=JSON.parse(JSON.stringify(prog));
-        const p=nd.topicProgress[quiz.topicId];
+        const p=nd.topicProgress[String(quiz.topicId)];
         const passed=score>=6;
         p.learned=true;p.quizScore=score;p.reviewCount=(p.reviewCount||0)+1;p.lastReview=today;
         const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
@@ -1173,12 +1173,12 @@ function StudentApp({ user, onLogout }) {
           <div style={S.secTitle}>📅 今日任务（第{dayNum}天）</div>
           {todayTopics.length===0
             ?<div style={S.empty}><div style={{fontSize:44}}>🎉</div><div style={{fontWeight:700,fontSize:16}}>今日完成！</div><button style={{...S.rvBtn,marginTop:16,padding:"10px 24px"}} onClick={()=>setTab("library")}>去知识库</button></div>
-            :<div style={S.tGrid}>{todayTopics.map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[t.id]} onClick={()=>openTopic(t)}/>)}</div>
+            :<div style={S.tGrid}>{todayTopics.map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[String(t.id)]} onClick={()=>openTopic(t)}/>)}</div>
           }
-          {GRAMMAR_TOPICS.filter(t=>prog.topicProgress[t.id]?.lastReview===today&&prog.topicProgress[t.id]?.learned).length>0&&(
+          {GRAMMAR_TOPICS.filter(t=>prog.topicProgress[String(t.id)]?.lastReview===today&&prog.topicProgress[String(t.id)]?.learned).length>0&&(
             <>
               <div style={S.secTitle}>✅ 今日已完成</div>
-              <div style={S.tGrid}>{GRAMMAR_TOPICS.filter(t=>prog.topicProgress[t.id]?.lastReview===today&&prog.topicProgress[t.id]?.learned).map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[t.id]} learned onClick={()=>openTopic(t)}/>)}</div>
+              <div style={S.tGrid}>{GRAMMAR_TOPICS.filter(t=>prog.topicProgress[String(t.id)]?.lastReview===today&&prog.topicProgress[String(t.id)]?.learned).map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[String(t.id)]} learned onClick={()=>openTopic(t)}/>)}</div>
             </>
           )}
         </div>
@@ -1206,13 +1206,13 @@ function StudentApp({ user, onLogout }) {
             </div>
           </div>
           {reviewTopics.length>0
-            ?<div style={S.tGrid}>{reviewTopics.map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[t.id]} learned isDue onClick={()=>openTopic(t)}/>)}</div>
+            ?<div style={S.tGrid}>{reviewTopics.map(t=><TCard key={t.id} topic={t} progress={prog.topicProgress[String(t.id)]} learned isDue onClick={()=>openTopic(t)}/>)}</div>
             :<div style={S.empty}><div style={{fontSize:40}}>✨</div><div style={{fontWeight:700}}>今日无需复习</div></div>
           }
           {(()=>{
-            const up=GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[t.id];return p?.learned&&p?.nextReview&&p.nextReview>today;}).sort((a,b)=>prog.topicProgress[a.id].nextReview.localeCompare(prog.topicProgress[b.id].nextReview));
+            const up=GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview>today;}).sort((a,b)=>prog.topicProgress[a.id].nextReview.localeCompare(prog.topicProgress[b.id].nextReview));
             if(!up.length)return null;
-            return(<><div style={S.secTitle}>📅 即将复习</div>{up.slice(0,8).map(t=>{const p=prog.topicProgress[t.id];const days=Math.ceil((new Date(p.nextReview)-new Date(today))/86400000);return(<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 20px",background:"#fff",borderBottom:"1px solid #f5f5f5"}}><span style={{fontSize:18}}>{t.emoji}</span><span style={{flex:1,fontSize:12}}>{t.title}</span><span style={{fontSize:11,color:"#636e72",background:"#f0f0f0",padding:"2px 8px",borderRadius:20}}>{days}天后</span></div>);})}</>);
+            return(<><div style={S.secTitle}>📅 即将复习</div>{up.slice(0,8).map(t=>{const p=prog.topicProgress[String(t.id)];const days=Math.ceil((new Date(p.nextReview)-new Date(today))/86400000);return(<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 20px",background:"#fff",borderBottom:"1px solid #f5f5f5"}}><span style={{fontSize:18}}>{t.emoji}</span><span style={{flex:1,fontSize:12}}>{t.title}</span><span style={{fontSize:11,color:"#636e72",background:"#f0f0f0",padding:"2px 8px",borderRadius:20}}>{days}天后</span></div>);})}</>);
           })()}
         </div>
       )}
@@ -1226,7 +1226,7 @@ function StudentApp({ user, onLogout }) {
             ))}
           </div>
           <div style={S.secTitle}>各考点掌握情况</div>
-          {GRAMMAR_TOPICS.map(t=>{const p=prog.topicProgress[t.id];const pct2=p?.learned?Math.min(100,((p.intervalIdx||0)/SR_INTERVALS.length)*100):0;return(
+          {GRAMMAR_TOPICS.map(t=>{const p=prog.topicProgress[String(t.id)];const pct2=p?.learned?Math.min(100,((p.intervalIdx||0)/SR_INTERVALS.length)*100):0;return(
             <div key={t.id} style={S.pRow}><span style={{fontSize:13}}>{t.emoji}</span><div style={S.pInfo}><div style={{fontSize:10,fontWeight:600,marginBottom:3}}>{t.title}</div><div style={S.pBar}><div style={{...S.pFill,width:`${pct2}%`,background:t.color}}/></div></div><span style={{fontSize:11,color:p?.learned?"#00b894":"#b2bec3",minWidth:38,textAlign:"right"}}>{p?.learned?`${p.quizScore}/10`:"未学"}</span></div>
           );})}
         </div>
