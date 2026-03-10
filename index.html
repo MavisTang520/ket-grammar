@@ -1119,7 +1119,10 @@ function StudentApp({ user, onLogout }) {
         const nx=new Date();nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
         p.nextReview=nx.toISOString().split("T")[0];
         nd.xp=(nd.xp||0)+score*10;
-        save(nd); setScreen("dash");
+        save(nd);
+        setQuiz(null);
+        setSel(null);
+        setScreen("dash");
       }}
     />
   );
@@ -1272,12 +1275,45 @@ function StudyScreen({topic,onStartQuiz,onBack,userName}){
 function QuizScreen({topic,quiz,setQuiz,onFinish,onBack}){
   const [sel,setSel]=useState(null);
   const [fb,setFb]=useState(false);
-  const q=topic.quiz[quiz.qIdx];
-  const ok=sel===q.answer;
-  const lc=q.level===1?"#00b894":q.level===2?"#FFC300":"#FF6B6B";
-  const ll=q.level===1?"⭐基础":q.level===2?"⭐⭐中等":"⭐⭐⭐难";
+  const [finished,setFinished]=useState(false);
+  const [finalScore,setFinalScore]=useState(0);
+  const q=finished?null:topic.quiz[quiz.qIdx];
+  const ok=sel===q?.answer;
+  const lc=q?.level===1?"#00b894":q?.level===2?"#FFC300":"#FF6B6B";
+  const ll=q?.level===1?"⭐基础":q?.level===2?"⭐⭐中等":"⭐⭐⭐难";
   const pick=(i)=>{if(fb)return;setSel(i);setFb(true);};
-  const next=()=>{const ns=quiz.score+(ok?1:0);if(quiz.qIdx+1>=topic.quiz.length){onFinish(ns);}else{setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns});setSel(null);setFb(false);}};
+  const next=()=>{const ns=quiz.score+(ok?1:0);if(quiz.qIdx+1>=topic.quiz.length){setFinalScore(ns);setFinished(true);}else{setQuiz({...quiz,qIdx:quiz.qIdx+1,score:ns});setSel(null);setFb(false);}};
+  if(finished){
+    const passed=finalScore>=6;
+    return(
+      <div style={S.sPage}>
+        <div style={{...S.sHdr,background:passed?"linear-gradient(135deg,#00b894,#00cec9)":"linear-gradient(135deg,#e17055,#d63031)"}}>
+          <button style={S.backBtn} onClick={()=>onFinish(finalScore)}>← 返回</button>
+          <h2 style={{color:"#fff",fontSize:14,fontWeight:900,margin:"8px 0 0"}}>{topic.emoji} 练习结果</h2>
+        </div>
+        <div style={{textAlign:"center",padding:"40px 24px"}}>
+          <div style={{fontSize:72}}>{passed?"🎉":"💪"}</div>
+          <div style={{fontSize:32,fontWeight:900,color:passed?"#00b894":"#e17055",margin:"16px 0 8px"}}>{finalScore}/10</div>
+          <div style={{fontSize:18,fontWeight:700,color:"#2d3436",marginBottom:8}}>{passed?"恭喜，已掌握！":"继续加油！"}</div>
+          <div style={{fontSize:13,color:"#636e72",marginBottom:32}}>{passed?"答对"+finalScore+"题，考点已解锁复习计划":"答对"+finalScore+"题，建议再学一遍"}</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
+            <div style={{background:passed?"#d4edda":"#f8d7da",borderRadius:14,padding:16}}>
+              <div style={{fontSize:24,fontWeight:900,color:passed?"#00b894":"#e17055"}}>{finalScore}</div>
+              <div style={{fontSize:11,color:"#636e72"}}>答对题数</div>
+            </div>
+            <div style={{background:"#e3f2fd",borderRadius:14,padding:16}}>
+              <div style={{fontSize:24,fontWeight:900,color:"#667eea"}}>+{finalScore*10}</div>
+              <div style={{fontSize:11,color:"#636e72"}}>获得XP</div>
+            </div>
+          </div>
+          <button style={{...S.primBtn,background:passed?"#00b894":"#667eea"}} onClick={()=>onFinish(finalScore)}>
+            {passed?"🎊 返回首页":"🔄 返回再学一遍"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return(
     <div style={S.sPage}>
       <div style={S.sHdr}>
