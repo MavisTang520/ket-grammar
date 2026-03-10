@@ -1072,17 +1072,16 @@ function AdminApp({ user, onLogout }) {
 // STUDENT APP
 // ═══════════════════════════════════════════════════════
 function StudentApp({ user, onLogout }) {
-  const [tab, setTab]       = useState("today");
-  const [selTopic, setSel]  = useState(null);
-  const [quiz, setQuiz]     = useState(null);
-  const [screen, setScreen] = useState("dash");
-  
-  // goHome: atomically reset everything
-  const goHome = useCallback(() => {
-    setScreen("dash");
-    setQuiz(null);
-    setSel(null);
-  }, []);
+  const [tab, setTab] = useState("today");
+  // Single state for navigation - prevents any intermediate blank renders
+  const [nav, setNav] = useState({screen:"dash", topicId:null, quiz:null});
+  const selTopic = nav.topicId ? GRAMMAR_TOPICS.find(t=>t.id===nav.topicId) : null;
+  const quiz = nav.quiz;
+  const screen = nav.screen;
+  const goHome  = useCallback(() => setNav({screen:"dash", topicId:null, quiz:null}), []);
+  const setSel  = useCallback((t) => setNav(n=>({...n, topicId:t?t.id:null})), []);
+  const setQuiz = useCallback((q) => setNav(n=>({...n, quiz:q, screen:q?"quiz":n.screen})), []);
+  const setScreen = useCallback((s) => setNav(n=>({...n, screen:s})), []);
   const [prog, setProg]     = useState(null);
   const today = new Date().toISOString().split("T")[0];
 
@@ -1106,35 +1105,31 @@ function StudentApp({ user, onLogout }) {
   const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[String(t.id)]?.learned);
   const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
 
-  const openTopic = (t) => { setSel(t); setScreen("study"); };
+  const openTopic = (t) => { setNav({screen:"study", topicId:t.id, quiz:null}); };
 
   if (screen==="study"&&selTopic) return(
     <StudyScreen topic={selTopic} userName={user.displayName}
-      onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});setScreen("quiz");}}
-      onBack={()=>{ setScreen("dash"); setSel(null); }} />
+      onStartQuiz={()=>{ setNav({screen:"quiz", topicId:selTopic.id, quiz:{topicId:selTopic.id,qIdx:0,score:0}}); }}
+      onBack={()=>goHome()} />
   );
   if (screen==="quiz"&&quiz) return(
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
       onGoHome={(score)=>{
-        // 立即回首页
+        const topicId = String(nav.topicId);
+        const nd=JSON.parse(JSON.stringify(prog));
+        const p=nd.topicProgress[topicId];
+        if(p){
+          const passed=score>=6;
+          p.learned=true; p.quizScore=score; p.reviewCount=(p.reviewCount||0)+1; p.lastReview=today;
+          const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
+          p.intervalIdx=ni;
+          const nx=new Date(); nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
+          p.nextReview=nx.toISOString().split("T")[0];
+          nd.xp=(nd.xp||0)+score*10;
+          save(nd);
+        }
         goHome();
-        // 保存进度
-        try {
-          const topicId = String(quiz.topicId);
-          const nd=JSON.parse(JSON.stringify(prog));
-          if(nd.topicProgress[topicId]) {
-            const p=nd.topicProgress[topicId];
-            const passed=score>=6;
-            p.learned=true; p.quizScore=score; p.reviewCount=(p.reviewCount||0)+1; p.lastReview=today;
-            const ni=passed?Math.min((p.intervalIdx||0)+1,SR_INTERVALS.length-1):0;
-            p.intervalIdx=ni;
-            const nx=new Date(); nx.setDate(nx.getDate()+(SR_INTERVALS[Math.max(ni-1,0)]||1));
-            p.nextReview=nx.toISOString().split("T")[0];
-            nd.xp=(nd.xp||0)+score*10;
-            save(nd);
-          }
-        } catch(e) { console.error("保存进度失败", e); }
       }}
       onFinish={(score)=>{
         const nd=JSON.parse(JSON.stringify(prog));
