@@ -1106,7 +1106,7 @@ function StudentApp({ user, onLogout }) {
       onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});setScreen("quiz");}}
       onBack={()=>setScreen("dash")} />
   );
-  if (screen==="quiz"&&quiz) return(
+  if (screen==="quiz"&&quiz&&GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)) return(
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
       onFinish={(score)=>{
@@ -1120,9 +1120,9 @@ function StudentApp({ user, onLogout }) {
         p.nextReview=nx.toISOString().split("T")[0];
         nd.xp=(nd.xp||0)+score*10;
         save(nd);
+        setScreen("dash");
         setQuiz(null);
         setSel(null);
-        setScreen("dash");
       }}
     />
   );
