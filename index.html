@@ -1075,9 +1075,7 @@ function StudentApp({ user, onLogout }) {
   const [tab, setTab]       = useState("today");
   const [selTopic, setSel]  = useState(null);
   const [quiz, setQuiz]     = useState(null);
-  // Derive screen from state - no separate screen state needed
-  const screen = quiz ? "quiz" : selTopic ? "study" : "dash";
-  const setScreen = (s) => { if(s==="dash"){ setQuiz(null); setSel(null); } };
+  const [screen, setScreen] = useState("dash");
   const [prog, setProg]     = useState(null);
   const today = new Date().toISOString().split("T")[0];
 
@@ -1101,16 +1099,16 @@ function StudentApp({ user, onLogout }) {
   const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[String(t.id)]?.learned);
   const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
 
-  const openTopic = (t) => { setSel(t); setQuiz(null); };
+  const openTopic = (t) => { setSel(t); setScreen("study"); };
 
-  if (screen==="study") return(
+  if (screen==="study"&&selTopic) return(
     <StudyScreen topic={selTopic} userName={user.displayName}
-      onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});}}
-      onBack={()=>setSel(null)} />
+      onStartQuiz={()=>{setQuiz({topicId:selTopic.id,qIdx:0,score:0});setScreen("quiz");}}
+      onBack={()=>setScreen("dash")} />
   );
-  if (screen==="quiz") return(
+  if (screen==="quiz"&&quiz) return(
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
-      quiz={quiz} setQuiz={setQuiz} onBack={()=>setQuiz(null)}
+      quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
       onGoHome={(score)=>{
         const topicId = String(quiz.topicId);
         const nd=JSON.parse(JSON.stringify(prog));
@@ -1123,6 +1121,7 @@ function StudentApp({ user, onLogout }) {
         p.nextReview=nx.toISOString().split("T")[0];
         nd.xp=(nd.xp||0)+score*10;
         save(nd);
+        setScreen("dash");
         setQuiz(null);
         setSel(null);
       }}
@@ -1137,6 +1136,7 @@ function StudentApp({ user, onLogout }) {
         p.nextReview=nx.toISOString().split("T")[0];
         nd.xp=(nd.xp||0)+score*10;
         save(nd);
+        setScreen("dash");
         setQuiz(null);
         setSel(null);
       }}
