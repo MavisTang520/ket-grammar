@@ -1198,7 +1198,7 @@ function StudentApp({ user, onLogout }) {
           {Object.entries(CATEGORY_MAP).map(([cat,ids])=>(
             <div key={cat}>
               <div style={S.catTitle}>{cat}</div>
-              <div style={S.tGrid}>{ids.map(id=>{const topic=GRAMMAR_TOPICS.find(t=>t.id===id);if(!topic)return null;const p=prog.topicProgress[topic.id];const due=p?.learned&&p?.nextReview&&p.nextReview<=today;return<TCard key={topic.id} topic={topic} progress={p} learned={p?.learned} isDue={due} onClick={()=>openTopic(topic)}/>;})}</div>
+              <div style={S.tGrid}>{ids.map(id=>{const topic=GRAMMAR_TOPICS.find(t=>t.id===id);if(!topic)return null;const p=prog.topicProgress[String(topic.id)];const due=p?.learned&&p?.nextReview&&p.nextReview<=today;return<TCard key={topic.id} topic={topic} progress={p} learned={p?.learned} isDue={due} onClick={()=>openTopic(topic)}/>;})}</div>
             </div>
           ))}
         </div>
@@ -1218,7 +1218,7 @@ function StudentApp({ user, onLogout }) {
             :<div style={S.empty}><div style={{fontSize:40}}>✨</div><div style={{fontWeight:700}}>今日无需复习</div></div>
           }
           {(()=>{
-            const up=GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview>today;}).sort((a,b)=>prog.topicProgress[a.id].nextReview.localeCompare(prog.topicProgress[b.id].nextReview));
+            const up=GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview>today;}).sort((a,b)=>(prog.topicProgress[String(a.id)]?.nextReview||"").localeCompare(prog.topicProgress[String(b.id)]?.nextReview||""));
             if(!up.length)return null;
             return(<><div style={S.secTitle}>📅 即将复习</div>{up.slice(0,8).map(t=>{const p=prog.topicProgress[String(t.id)];const days=Math.ceil((new Date(p.nextReview)-new Date(today))/86400000);return(<div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"9px 20px",background:"#fff",borderBottom:"1px solid #f5f5f5"}}><span style={{fontSize:18}}>{t.emoji}</span><span style={{flex:1,fontSize:12}}>{t.title}</span><span style={{fontSize:11,color:"#636e72",background:"#f0f0f0",padding:"2px 8px",borderRadius:20}}>{days}天后</span></div>);})}</>);
           })()}
