@@ -583,6 +583,19 @@ function makeProgress(planDays) {
   return { planDays, startDate:today, topicProgress:tp, xp:0 };
 }
 
+function sanitizeProgress(prog) {
+  if (!prog) return makeProgress(30);
+  if (!prog.topicProgress) prog.topicProgress = makeProgress(30).topicProgress;
+  // Fix any null values in topicProgress
+  GRAMMAR_TOPICS.forEach(t => {
+    const key = String(t.id);
+    if (!prog.topicProgress[key] || prog.topicProgress[key] === null) {
+      prog.topicProgress[key] = {learned:false,quizScore:0,reviewCount:0,nextReview:null,lastReview:null,intervalIdx:0};
+    }
+  });
+  return prog;
+}
+
 // ── Root App ─────────────────────────────────────────────
 function App() {
   const [fbReady, setFbReady] = useState(!!window._fbReady);
@@ -778,7 +791,7 @@ function AdminApp({ user, onLogout }) {
   const activeS = students.filter(([,u])=>u.active!==false).length;
   const avgPct  = totalS ? Math.round(students.reduce((s,[,u])=>{
     const tp=u.progress?.topicProgress||{};
-    return s+Object.values(tp).filter(p=>p.learned).length/GRAMMAR_TOPICS.length*100;
+    return s+Object.values(tp).filter(p=>p&&p.learned).length/GRAMMAR_TOPICS.length*100;
   },0)/totalS) : 0;
   const totalXP = students.reduce((s,[,u])=>s+(u.progress?.xp||0),0);
 
@@ -875,7 +888,7 @@ function AdminApp({ user, onLogout }) {
               </div>
               <div style={S.secTitle}>🏆 进度 Top 5</div>
               {students
-                .map(([un,u])=>({un,u,pct:Math.round(Object.values(u.progress?.topicProgress||{}).filter(p=>p.learned).length/GRAMMAR_TOPICS.length*100)}))
+                .map(([un,u])=>({un,u,pct:Math.round(Object.values(u.progress?.topicProgress||{}).filter(p=>p&&p.learned).length/GRAMMAR_TOPICS.length*100)}))
                 .sort((a,b)=>b.pct-a.pct).slice(0,5)
                 .map(({un,u,pct},i)=>(
                   <div key={un} style={S.rankRow}>
@@ -911,7 +924,7 @@ function AdminApp({ user, onLogout }) {
               {students.length===0 && <div style={S.empty}><div style={{fontSize:36}}>👤</div><div>暂无学生注册</div></div>}
               {students.map(([un,u])=>{
                 const tp=u.progress?.topicProgress||{};
-                const learned=Object.values(tp).filter(p=>p.learned).length;
+                const learned=Object.values(tp).filter(p=>p&&p.learned).length;
                 const pct=Math.round(learned/GRAMMAR_TOPICS.length*100);
                 const open=expanded===un;
                 return(
@@ -971,7 +984,7 @@ function AdminApp({ user, onLogout }) {
               {students.length===0 && <div style={S.empty}><div style={{fontSize:36}}>📊</div><div>暂无学生数据</div></div>}
               {students.map(([un,u])=>{
                 const tp=u.progress?.topicProgress||{};
-                const learned=Object.values(tp).filter(p=>p.learned);
+                const learned=Object.values(tp).filter(p=>p&&p.learned);
                 const avgScore=learned.length?Math.round(learned.reduce((s,p)=>s+(p.quizScore||0),0)/learned.length*10)/10:0;
                 const days=u.progress?.startDate?Math.floor((new Date()-new Date(u.progress.startDate))/86400000)+1:0;
                 const pct=Math.round(learned.length/GRAMMAR_TOPICS.length*100);
@@ -1012,9 +1025,9 @@ function AdminApp({ user, onLogout }) {
           {tab==="rank" && (
             <>
               {[
-                {label:"🏆 完成度排行",fn:([,u])=>Math.round(Object.values(u.progress?.topicProgress||{}).filter(p=>p.learned).length/GRAMMAR_TOPICS.length*100),unit:"%"},
+                {label:"🏆 完成度排行",fn:([,u])=>Math.round(Object.values(u.progress?.topicProgress||{}).filter(p=>p&&p.learned).length/GRAMMAR_TOPICS.length*100),unit:"%"},
                 {label:"⭐ 积分排行",fn:([,u])=>u.progress?.xp||0,unit:" XP"},
-                {label:"📝 平均得分",fn:([,u])=>{const a=Object.values(u.progress?.topicProgress||{}).filter(p=>p.learned);return a.length?Math.round(a.reduce((s,p)=>s+(p.quizScore||0),0)/a.length*10)/10:0;},unit:"/10"},
+                {label:"📝 平均得分",fn:([,u])=>{const a=Object.values(u.progress?.topicProgress||{}).filter(p=>p&&p.learned);return a.length?Math.round(a.reduce((s,p)=>s+(p.quizScore||0),0)/a.length*10)/10:0;},unit:"/10"},
               ].map(({label,fn,unit})=>(
                 <div key={label}>
                   <div style={S.secTitle}>{label}</div>
@@ -1083,19 +1096,19 @@ function StudentApp({ user, onLogout }) {
   useEffect(()=>{
     (async()=>{
       const u = await dbRead(`users/${user.username}`);
-      if (u) setProg(u.progress || makeProgress(30));
+      if (u) setProg(sanitizeProgress(u.progress));
     })();
   },[user.username]);
 
   const save = useCallback(async (newProg) => {
-    setProg(newProg);
+    setProg(sanitizeProgress(newProg));
     await dbPatch(`users/${user.username}`, { progress: newProg, lastActive: today });
   },[user.username, today]);
 
   if (!prog) return <Splash text="加载学习进度…" />;
 
   const dayNum = Math.floor((new Date(today)-new Date(prog.startDate))/86400000)+1;
-  const totalLearned = Object.values(prog.topicProgress).filter(p=>p.learned).length;
+  const totalLearned = Object.values(prog.topicProgress).filter(p=>p&&p.learned).length;
   const pct = Math.round(totalLearned/GRAMMAR_TOPICS.length*100);
   const todayTopics = GRAMMAR_TOPICS.filter(t=>t.day<=dayNum&&!prog.topicProgress[String(t.id)]?.learned);
   const reviewTopics = GRAMMAR_TOPICS.filter(t=>{const p=prog.topicProgress[String(t.id)];return p?.learned&&p?.nextReview&&p.nextReview<=today;});
