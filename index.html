@@ -1111,7 +1111,7 @@ function StudentApp({ user, onLogout }) {
     <QuizScreen topic={GRAMMAR_TOPICS.find(t=>t.id===quiz.topicId)}
       quiz={quiz} setQuiz={setQuiz} onBack={()=>setScreen("study")}
       onGoHome={(score)=>{
-        setScreen("dash"); setQuiz(null); setSel(null);
+        setTab("today"); setScreen("dash"); setQuiz(null); setSel(null);
         try {
           const topicId = String(quiz.topicId);
           const nd=JSON.parse(JSON.stringify(prog));
@@ -1129,7 +1129,7 @@ function StudentApp({ user, onLogout }) {
         } catch(e) { console.error("save err",e); }
       }}
       onFinish={(score)=>{
-        setScreen("dash"); setQuiz(null); setSel(null);
+        setTab("today"); setScreen("dash"); setQuiz(null); setSel(null);
         try {
           const topicId=String(quiz.topicId);
           const nd=JSON.parse(JSON.stringify(prog));
